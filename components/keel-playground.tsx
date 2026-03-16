@@ -7,6 +7,7 @@ import {
   API_KEY_STORAGE_KEY,
   defaultEndpointId,
   endpointDefinitions,
+  getEndpointIdFromQueryParam,
   type EndpointDefinition,
   type EndpointId,
 } from "@/lib/examples";
@@ -73,6 +74,16 @@ export function KeelPlayground() {
     apiKey,
     requestBody,
   });
+
+  useEffect(() => {
+    const endpointIdFromQuery = getEndpointIdFromQueryParam(
+      new URLSearchParams(window.location.search).get("endpoint"),
+    );
+
+    if (endpointIdFromQuery) {
+      setSelectedEndpointId(endpointIdFromQuery);
+    }
+  }, []);
 
   useEffect(() => {
     try {

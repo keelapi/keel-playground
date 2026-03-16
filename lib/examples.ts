@@ -143,3 +143,17 @@ export const endpointDefinitions: EndpointDefinition[] = [
 ];
 
 export const defaultEndpointId: EndpointId = "permits";
+
+export function isEndpointId(value: string): value is EndpointId {
+  return endpointDefinitions.some((endpoint) => endpoint.id === value);
+}
+
+export function getEndpointIdFromQueryParam(
+  value: string | null | undefined,
+): EndpointId | null {
+  if (!value) {
+    return null;
+  }
+
+  return isEndpointId(value) ? value : null;
+}
