@@ -10,6 +10,10 @@ import {
   type EndpointDefinition,
   type EndpointId,
 } from "@/lib/examples";
+import {
+  buildRequestExamples,
+  type SnippetKind,
+} from "@/lib/request-examples";
 
 type ResponseState = {
   status: number;
@@ -33,6 +37,22 @@ function formatJson(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
+function getStatusBadgeTone(status: number): string {
+  if (status >= 200 && status < 300) {
+    return "border-success/40 bg-success/10 text-success";
+  }
+
+  if (status === 400) {
+    return "border-amber-400/40 bg-amber-400/10 text-amber-200";
+  }
+
+  if (status >= 400) {
+    return "border-danger/40 bg-danger/10 text-danger";
+  }
+
+  return "border-line bg-white/5 text-slate-300";
+}
+
 export function KeelPlayground() {
   const [selectedEndpointId, setSelectedEndpointId] =
     useState<EndpointId>(defaultEndpointId);
@@ -40,12 +60,19 @@ export function KeelPlayground() {
   const [requestBody, setRequestBody] = useState(
     getEndpointDefinition(defaultEndpointId).example,
   );
+  const [activeSnippet, setActiveSnippet] = useState<SnippetKind>("curl");
+  const [copiedSnippet, setCopiedSnippet] = useState<SnippetKind | null>(null);
   const [responseState, setResponseState] = useState<ResponseState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isStorageReady, setIsStorageReady] = useState(false);
 
   const selectedEndpoint = getEndpointDefinition(selectedEndpointId);
+  const requestExamples = buildRequestExamples({
+    endpoint: selectedEndpoint,
+    apiKey,
+    requestBody,
+  });
 
   useEffect(() => {
     try {
@@ -142,11 +169,28 @@ export function KeelPlayground() {
     setErrorMessage(null);
   }
 
+  async function handleCopySnippet(snippetKind: SnippetKind) {
+    try {
+      await navigator.clipboard.writeText(requestExamples[snippetKind]);
+      setCopiedSnippet(snippetKind);
+      window.setTimeout(() => {
+        setCopiedSnippet((currentSnippet) =>
+          currentSnippet === snippetKind ? null : currentSnippet,
+        );
+      }, 1800);
+    } catch {
+      setCopiedSnippet(null);
+    }
+  }
+
   const responseTone = responseState
-    ? responseState.status >= 200 && responseState.status < 300
-      ? "border-success/40 bg-success/10 text-success"
-      : "border-danger/40 bg-danger/10 text-danger"
+    ? getStatusBadgeTone(responseState.status)
     : "border-line bg-white/5 text-slate-300";
+  const snippetLabels: Record<SnippetKind, string> = {
+    curl: "curl",
+    javascript: "JavaScript",
+    python: "Python",
+  };
 
   return (
     <main className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
@@ -211,9 +255,20 @@ export function KeelPlayground() {
               spellCheck={false}
               value={apiKey}
               onChange={(event) => setApiKey(event.target.value)}
-              placeholder="keel_sk_your_key_here"
+              placeholder="keel_sk_live_xxxxxxxxx"
               className="w-full rounded-2xl border border-line bg-ink/80 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-accent"
             />
+            <p className="text-xs text-slate-500">
+              Need a key?{" "}
+              <a
+                href="https://docs.keelapi.com/quickstart"
+                target="_blank"
+                rel="noreferrer"
+                className="text-slate-300 underline decoration-slate-600 underline-offset-4 transition hover:text-accent"
+              >
+                Generate one in the Keel dashboard.
+              </a>
+            </p>
             <p className="text-sm text-slate-400">
               Stored in your browser via <code>localStorage</code>. The key is never
               hardcoded or written to project files.
@@ -292,6 +347,32 @@ export function KeelPlayground() {
         >
           {responseState ? (
             <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-ink/80 p-4">
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                  Status
+                </div>
+                <span
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium ${responseTone}`}
+                >
+                  {responseState.status} {responseState.statusText}
+                </span>
+              </div>
+
+              {responseState.status === 401 ? (
+                <div className="rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-100">
+                  <p className="font-medium text-amber-50">
+                    Missing or invalid API key.
+                  </p>
+                  <p className="mt-1 text-amber-100/90">
+                    Use a valid Keel API key. The playground does not create
+                    keys.
+                  </p>
+                  <p className="mt-1 text-amber-100/90">
+                    You can generate a key via the Keel dashboard or API.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="rounded-2xl border border-line bg-ink/80 p-4">
                 <div className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
                   Headers
@@ -322,6 +403,55 @@ export function KeelPlayground() {
               Send a request to inspect the status code, response headers, and body.
             </div>
           )}
+        </Panel>
+      </section>
+
+      <section className="mt-4">
+        <Panel
+          title="Request Examples"
+          subtitle="Copy the current request as curl, fetch, or Python requests"
+          toolbar={
+            <div className="flex flex-wrap items-center gap-2">
+              {(["curl", "javascript", "python"] as SnippetKind[]).map(
+                (snippetKind) => {
+                  const isActive = activeSnippet === snippetKind;
+
+                  return (
+                    <button
+                      key={snippetKind}
+                      type="button"
+                      onClick={() => setActiveSnippet(snippetKind)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        isActive
+                          ? "border-accent/50 bg-accentSoft text-accent"
+                          : "border-line bg-white/5 text-slate-300 hover:border-slate-500 hover:bg-white/10"
+                      }`}
+                    >
+                      {snippetLabels[snippetKind]}
+                    </button>
+                  );
+                },
+              )}
+            </div>
+          }
+        >
+          <div className="rounded-2xl border border-line bg-ink/80">
+            <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                {snippetLabels[activeSnippet]}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopySnippet(activeSnippet)}
+                className="rounded-full border border-line bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:bg-white/10"
+              >
+                {copiedSnippet === activeSnippet ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <pre className="overflow-x-auto p-4 text-sm leading-6 text-slate-100">
+              <code>{requestExamples[activeSnippet]}</code>
+            </pre>
+          </div>
         </Panel>
       </section>
     </main>
