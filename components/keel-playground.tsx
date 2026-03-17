@@ -208,18 +208,16 @@ export function KeelPlayground() {
     <div className="min-h-screen bg-background">
       <header className="site-header">
         <div className="site-header__inner">
-          <a
-            href="https://keelapi.com"
-            className="keel-header-brand"
-          >
-            <img className="keel-header-brand__icon" src="/keel.svg" alt="" aria-hidden="true" />
-            <span className="keel-header-brand__copy">
+          <span className="keel-header-brand">
+            <a href="https://keelapi.com" className="keel-header-brand__link">
+              <img className="keel-header-brand__icon" src="/keel.svg" alt="" aria-hidden="true" />
               <span className="keel-header-brand__wordmark">Keel</span>
-              <span className="keel-header-brand__divider" aria-hidden="true"></span>
+            </a>
+            <span className="keel-header-brand__copy">
+              <span className="keel-header-brand__separator" aria-hidden="true">|</span>
               <span className="keel-header-brand__title">Playground</span>
-              <span className="keel-header-brand__subtitle">Interactive API testing</span>
             </span>
-          </a>
+          </span>
           <div className="site-header__actions">
             <a
               href="https://docs.keelapi.com/quickstart"

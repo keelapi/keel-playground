@@ -148,18 +148,6 @@
     align-items: center;
     gap: 12px;
     min-height: 40px;
-    border-radius: calc(var(--radius) - 0.25rem);
-    transition: color 0.18s ease;
-  }
-
-  .keel-header-brand:hover .keel-header-brand__wordmark,
-  .keel-header-brand:hover .keel-header-brand__title {
-    color: hsl(var(--primary));
-  }
-
-  .keel-header-brand:focus-visible {
-    outline: 2px solid hsl(var(--ring) / 0.35);
-    outline-offset: 4px;
   }
 
   .keel-header-brand__icon {
@@ -168,43 +156,57 @@
     flex: 0 0 auto;
   }
 
-  .keel-header-brand__copy {
+  .keel-header-brand__link {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    line-height: 1;
+    color: hsl(var(--foreground));
+    transition: color 0.18s ease;
+  }
+
+  .keel-header-brand__link:hover {
+    color: hsl(var(--primary));
+  }
+
+  .keel-header-brand__link:focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.35);
+    outline-offset: 4px;
+  }
+
+  .keel-header-brand__copy {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
     min-width: 0;
     line-height: 1;
   }
 
   .keel-header-brand__wordmark {
-    color: hsl(var(--foreground));
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    color: inherit;
+    font-size: 1.08rem;
+    font-weight: 675;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
   }
 
-  .keel-header-brand__divider {
-    width: 1px;
-    height: 0.95rem;
-    background: hsl(var(--input));
-    flex: 0 0 auto;
+  .keel-header-brand__separator {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.92rem;
+    font-weight: 500;
   }
 
-  .keel-header-brand__title {
-    color: hsl(var(--foreground));
-    font-size: 0.95rem;
+  .keel-header-brand__title,
+  .keel-header-brand__separator {
+    color: hsl(var(--muted-foreground));
+    font-size: 0.92rem;
     font-weight: 500;
     letter-spacing: -0.02em;
   }
 
-  .keel-header-brand__subtitle {
-    color: hsl(var(--muted-foreground));
-    font-size: 0.82rem;
-  }
-
-  .keel-header-brand__wordmark,
-  .keel-header-brand__title,
-  .keel-header-brand__subtitle {
+  .keel-header-brand__copy,
+  .keel-header-brand__separator,
+  .keel-header-brand__title {
     white-space: nowrap;
   }
 
@@ -249,8 +251,7 @@
       gap: 8px;
     }
 
-    .keel-header-brand__divider,
-    .keel-header-brand__subtitle {
+    .keel-header-brand__separator {
       display: none;
     }
   }
