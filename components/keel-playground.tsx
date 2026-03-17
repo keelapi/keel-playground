@@ -206,26 +206,26 @@ export function KeelPlayground() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-16 w-full max-w-[1120px] items-center justify-between gap-4 px-4 md:px-6">
+      <header className="site-header">
+        <div className="site-header__inner">
           <a
             href="https://keelapi.com"
-            className="group inline-flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="keel-header-brand"
           >
-            <span className="text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
-              Keel
-            </span>
-            <span className="flex flex-col">
-              <span className="text-sm font-medium tracking-tight">Playground</span>
-              <span className="text-xs text-muted-foreground">Interactive API testing</span>
+            <img className="keel-header-brand__icon" src="/keel.svg" alt="" aria-hidden="true" />
+            <span className="keel-header-brand__copy">
+              <span className="keel-header-brand__wordmark">Keel</span>
+              <span className="keel-header-brand__divider" aria-hidden="true"></span>
+              <span className="keel-header-brand__title">Playground</span>
+              <span className="keel-header-brand__subtitle">Interactive API testing</span>
             </span>
           </a>
-          <div className="flex items-center gap-2">
+          <div className="site-header__actions">
             <a
               href="https://docs.keelapi.com/quickstart"
               target="_blank"
               rel="noreferrer"
-              className="hidden rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:inline-flex"
+              className="header-link"
             >
               Quickstart
             </a>
@@ -234,7 +234,7 @@ export function KeelPlayground() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1120px] flex-col px-4 py-6 md:px-6 md:py-8">
+      <main className="site-main">
         <section className="mb-6 rounded-xl border border-border bg-card text-card-foreground shadow-sm">
           <div className="flex flex-col gap-6 p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
