@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class"],
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -8,23 +9,47 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
       colors: {
-        ink: "#061019",
-        canvas: "#09131e",
-        panel: "#0e1b29",
-        line: "#223447",
-        accent: "#4dd0ff",
-        accentSoft: "rgba(77, 208, 255, 0.12)",
-        success: "#7bf1a8",
-        warning: "#ffd46b",
-        danger: "#ff7d7d",
-      },
-      boxShadow: {
-        panel: "0 24px 80px rgba(0, 0, 0, 0.32)",
-      },
-      fontFamily: {
-        sans: ["SF Pro Display", "IBM Plex Sans", "Segoe UI", "sans-serif"],
-        mono: ["SFMono-Regular", "IBM Plex Mono", "Menlo", "monospace"],
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        "keel-success": "hsl(var(--keel-success))",
+        "keel-warning": "hsl(var(--keel-warning))",
       },
     },
   },
