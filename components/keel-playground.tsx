@@ -208,15 +208,18 @@ export function KeelPlayground() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 w-full max-w-[1120px] items-center justify-between gap-4 px-4 md:px-6">
-          <div className="inline-flex items-center gap-3">
-            <div className="rounded-lg bg-primary px-2 py-1 text-sm font-semibold text-primary-foreground">
+          <a
+            href="https://keelapi.com"
+            className="group inline-flex items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <span className="text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
               Keel
-            </div>
-            <div className="flex flex-col">
+            </span>
+            <span className="flex flex-col">
               <span className="text-sm font-medium tracking-tight">Playground</span>
               <span className="text-xs text-muted-foreground">Interactive API testing</span>
-            </div>
-          </div>
+            </span>
+          </a>
           <div className="flex items-center gap-2">
             <a
               href="https://docs.keelapi.com/quickstart"
