@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Keel Playground",
-  description: "Test Keel API requests interactively.",
+  title: "Keel Shell",
+  description: "Explore how AI requests are decided, enforced, and audited in Keel.",
 };
 
 const themeBootstrapScript = `
