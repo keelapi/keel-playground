@@ -48,115 +48,108 @@ export function OutputPane({
   scrollRef,
 }: OutputPaneProps) {
   return (
-    <section className="flex min-h-0 flex-1 flex-col bg-background">
-      <div className="border-b border-border/80 px-3 py-2">
-        <div className="flex items-center justify-between gap-4 font-mono text-[11px] text-muted-foreground">
-          <div>session log</div>
-          <div className="hidden md:block">approved grammar / deterministic sandbox / keyboard first</div>
+    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      {entries.length === 0 ? (
+        <div className="px-4 py-5 font-mono">
+          <p className="text-[12px] text-foreground">Welcome to Keel Shell!</p>
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            A sandboxed playground for permit-driven AI governance. Try:
+          </p>
+          <div className="mt-4 space-y-1">
+            {starterCommands.map((command) => (
+              <button
+                key={command}
+                type="button"
+                onClick={() => onPrefillCommand(command)}
+                className="flex w-full items-baseline gap-2 py-0.5 text-left text-[12px] text-primary transition hover:text-foreground"
+              >
+                <span className="shrink-0 text-muted-foreground">—</span>
+                <span className="min-w-0 break-all">{command}</span>
+                <span className="shrink-0 text-muted-foreground">▸</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div>
+          {entries.map((entry) => {
+            const isSelected = entry.id === selectedEntryId;
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        {entries.length === 0 ? (
-          <div className="border-b border-border/70 px-3 py-2">
-            <div className="font-mono text-[11px] text-muted-foreground">
-              await command. preset-linked starters:
-            </div>
-            <div className="mt-2 space-y-0.5">
-              {starterCommands.map((command) => (
-                <button
-                  key={command}
-                  type="button"
-                  onClick={() => onPrefillCommand(command)}
-                  className="block w-full px-1 py-1 text-left font-mono text-[12px] text-foreground transition hover:bg-foreground/[0.02]"
-                >
-                  <span className="mr-2 text-muted-foreground">›</span>
-                  {command}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="pb-3">
-            {entries.map((entry) => {
-              const isSelected = entry.id === selectedEntryId;
-
-              return (
-                <article
-                  key={entry.id}
-                  onClick={() => onSelectEntry(entry.id)}
-                  onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onSelectEntry(entry.id);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  className={`border-b border-border/70 px-3 py-2 text-left outline-none transition ${
-                    isSelected ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.015]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 font-mono text-[13px] text-foreground">
-                      <span className="mr-2 text-muted-foreground">›</span>
-                      <span className="break-all">{entry.command}</span>
+            return (
+              <article
+                key={entry.id}
+                onClick={() => onSelectEntry(entry.id)}
+                onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelectEntry(entry.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className={`border-b border-border/70 px-4 py-1.5 text-left outline-none transition ${
+                  isSelected ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.015]"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 font-mono text-[13px] text-foreground">
+                    <span className="mr-2 text-muted-foreground">›</span>
+                    <span className="break-all">{entry.command}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="hidden font-mono text-[10px] text-muted-foreground sm:block">
+                      {new Date(entry.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="hidden font-mono text-[10px] text-muted-foreground sm:block">
-                        {new Date(entry.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onCopyCommand(entry.command);
-                        }}
-                        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground"
-                      >
-                        {copiedCommand === entry.command ? "copied" : "copy"}
-                      </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onCopyCommand(entry.command);
+                      }}
+                      className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground"
+                    >
+                      {copiedCommand === entry.command ? "copied" : "copy"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`mt-1 font-mono text-[12px] ${toneClasses(entry.artifact.tone)}`}>
+                  {entry.artifact.headline}
+                </div>
+
+                <div className="mt-1 grid gap-y-0.5 font-mono text-[12px] leading-[1.15rem] text-muted-foreground">
+                  {entry.artifact.rows.map((row) => (
+                    <div
+                      key={`${entry.id}-${row.label}`}
+                      className="grid gap-1.5 sm:grid-cols-[124px_minmax(0,1fr)]"
+                    >
+                      <div className="text-[11px]">{row.label}</div>
+                      <pre className="whitespace-pre-wrap break-words text-foreground">
+                        {renderValue(row.value)}
+                      </pre>
                     </div>
-                  </div>
-
-                  <div className={`mt-1.5 font-mono text-[12px] ${toneClasses(entry.artifact.tone)}`}>
-                    {entry.artifact.headline}
-                  </div>
-
-                  <div className="mt-1.5 grid gap-y-1 font-mono text-[12px] leading-5 text-muted-foreground">
-                    {entry.artifact.rows.map((row) => (
-                      <div
-                        key={`${entry.id}-${row.label}`}
-                        className="grid gap-2 sm:grid-cols-[132px_minmax(0,1fr)]"
-                      >
-                        <div className="text-[11px]">{row.label}</div>
-                        <pre className="whitespace-pre-wrap break-words text-foreground">
-                          {renderValue(row.value)}
-                        </pre>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              );
-            })}
-
-            {pendingCommand ? (
-              <div className="border-b border-border/70 px-3 py-2">
-                <div className="font-mono text-[13px] text-foreground">
-                  <span className="mr-2 text-muted-foreground">›</span>
-                  <span className="break-all">{pendingCommand}</span>
+                  ))}
                 </div>
-                <div className="mt-1.5 font-mono text-[11px] text-primary">
-                  evaluating deterministic governance path...
-                </div>
+              </article>
+            );
+          })}
+
+          {pendingCommand ? (
+            <div className="border-b border-border/70 px-4 py-1.5">
+              <div className="font-mono text-[13px] text-foreground">
+                <span className="mr-2 text-muted-foreground">›</span>
+                <span className="break-all">{pendingCommand}</span>
               </div>
-            ) : null}
-          </div>
-        )}
-      </div>
-    </section>
+              <div className="mt-1 font-mono text-[10px] text-primary">
+                evaluating governance path...
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }

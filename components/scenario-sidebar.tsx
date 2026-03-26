@@ -1,12 +1,10 @@
 "use client";
 
-import { resolveScenarioCommand } from "@/lib/shell/scenarios";
-import type { SessionState, WorkbenchScenario } from "@/lib/shell/types";
+import type { WorkbenchScenario } from "@/lib/shell/types";
 
 type ScenarioSidebarProps = {
   scenarios: readonly WorkbenchScenario[];
   activeScenarioId: string | null;
-  session: SessionState;
   onSelectScenario: (scenarioId: string) => void;
 };
 
@@ -21,7 +19,6 @@ const categoryLabels: Record<WorkbenchScenario["category"], string> = {
 export function ScenarioSidebar({
   scenarios,
   activeScenarioId,
-  session,
   onSelectScenario,
 }: ScenarioSidebarProps) {
   const groupedScenarios = scenarios.reduce<Record<string, WorkbenchScenario[]>>(
@@ -33,49 +30,32 @@ export function ScenarioSidebar({
   );
 
   return (
-    <aside className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-border/80 px-3 py-2">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          preset index
+    <nav className="flex h-full min-h-0 flex-col overflow-y-auto py-3">
+      {Object.entries(groupedScenarios).map(([category, categoryScenarios], groupIndex) => (
+        <div key={category} className={groupIndex > 0 ? "mt-3" : ""}>
+          <div className="mb-0.5 px-4 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+            {categoryLabels[category as WorkbenchScenario["category"]]}
+          </div>
+          {categoryScenarios.map((scenario) => {
+            const isActive = scenario.id === activeScenarioId;
+
+            return (
+              <button
+                key={scenario.id}
+                type="button"
+                onClick={() => onSelectScenario(scenario.id)}
+                className={`block w-full px-4 py-[7px] text-left text-[13px] leading-tight transition ${
+                  isActive
+                    ? "text-primary"
+                    : "text-foreground/80 hover:text-foreground"
+                }`}
+              >
+                {scenario.title}
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
-        {Object.entries(groupedScenarios).map(([category, categoryScenarios]) => (
-          <section key={category} className="mb-3">
-            <div className="mb-1 px-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-              {categoryLabels[category as WorkbenchScenario["category"]]}
-            </div>
-            <div>
-              {categoryScenarios.map((scenario) => {
-                const isActive = scenario.id === activeScenarioId;
-                const command = resolveScenarioCommand(scenario, session);
-
-                return (
-                  <button
-                    key={scenario.id}
-                    type="button"
-                    onClick={() => onSelectScenario(scenario.id)}
-                    className={`block w-full border-l px-2 py-1.5 text-left transition ${
-                      isActive
-                        ? "border-l-border bg-foreground/[0.03]"
-                        : "border-l-transparent hover:border-l-border hover:bg-foreground/[0.02]"
-                    }`}
-                  >
-                    <div className="truncate text-[12px] text-foreground">{scenario.title}</div>
-                    <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
-                      {command}
-                    </div>
-                    <div className="mt-0.5 truncate text-[10px] leading-4 text-muted-foreground">
-                      {scenario.description}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
-    </aside>
+      ))}
+    </nav>
   );
 }

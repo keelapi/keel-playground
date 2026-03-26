@@ -55,8 +55,10 @@ export function GovernanceInspector({
           </div>
           {inspector.decision ? (
             <div
-              className={`font-mono text-[10px] uppercase tracking-[0.14em] ${
-                inspector.decision === "allow" ? "text-primary" : "text-destructive"
+              className={`border px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] ${
+                inspector.decision === "allow"
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-destructive/30 bg-destructive/10 text-destructive"
               }`}
             >
               {inspector.decision}
@@ -171,8 +173,8 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="border-b border-border/70 px-3 py-2.5">
-      <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+    <section className="border-b border-border/70 px-3 py-2">
+      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
         {title}
       </div>
       {children}
@@ -182,9 +184,9 @@ function Section({
 
 function DefinitionList({ rows }: { rows: Array<[string, string]> }) {
   return (
-    <dl className="space-y-1">
+    <dl className="space-y-0.5">
       {rows.map(([label, value]) => (
-        <div key={`${label}-${value}`} className="grid grid-cols-[96px_minmax(0,1fr)] gap-2">
+        <div key={`${label}-${value}`} className="grid grid-cols-[92px_minmax(0,1fr)] gap-1.5">
           <dt className="font-mono text-[11px] text-muted-foreground">{label}</dt>
           <dd className="break-words font-mono text-[11px] text-foreground">{value}</dd>
         </div>

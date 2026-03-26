@@ -4,7 +4,6 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CommandInput } from "@/components/command-input";
-import { GovernanceInspector } from "@/components/governance-inspector";
 import { OutputPane } from "@/components/output-pane";
 import { ScenarioSidebar } from "@/components/scenario-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -174,10 +173,6 @@ export function WorkbenchShell() {
 
   const selectedEntry =
     entries.find((entry) => entry.id === selectedEntryId) ?? entries.at(-1) ?? null;
-  const selectedScenario = getScenarioById(activeScenarioId);
-  const helperText =
-    selectedScenario?.helperText ??
-    "Approved commands only. Use scenarios, `Tab`, or history recall to move quickly.";
   const starterCommands = SCENARIO_LIBRARY.slice(0, 3).map((scenario) =>
     resolveScenarioCommand(scenario, session),
   );
@@ -313,16 +308,6 @@ export function WorkbenchShell() {
     }
   }
 
-  function handleQuickAction(command: string, label: string) {
-    if (label === "Copy command") {
-      void handleCopyCommand(command);
-      return;
-    }
-
-    setCommandInput(command);
-    runCommand(command);
-  }
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="site-header">
@@ -340,9 +325,6 @@ export function WorkbenchShell() {
             </a>
           </span>
           <div className="site-header__actions">
-            <div className="hidden font-mono text-[11px] text-muted-foreground lg:block">
-              approved grammar / deterministic local / deep links
-            </div>
             <a
               href="https://docs.keelapi.com/quickstart"
               target="_blank"
@@ -356,19 +338,25 @@ export function WorkbenchShell() {
         </div>
       </header>
 
-      <main className="site-main">
-        <section className="grid h-[calc(100vh-47px)] min-h-[calc(100vh-47px)] grid-cols-1 border-y border-border/80 md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]">
-          <div className="min-h-0 border-b border-border/80 bg-muted/20 md:border-b-0 md:border-r">
-            <ScenarioSidebar
-              scenarios={SCENARIO_LIBRARY}
-              activeScenarioId={activeScenarioId}
-              session={session}
-              onSelectScenario={handleSelectScenario}
-            />
-          </div>
+      <main className="mx-auto max-w-[960px] px-6 pt-10 pb-16">
+        <div className="mb-6">
+          <h2 className="text-[15px] font-medium text-foreground">Try it out</h2>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Explore Keel&apos;s permit-driven governance in a deterministic sandbox.
+          </p>
+        </div>
 
-          <div className="min-h-0 border-b border-border/80 md:border-b-0 xl:border-r">
-            <div className="flex h-full min-h-0 flex-col bg-background">
+        <div className="overflow-hidden border border-border bg-card">
+          <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)]">
+            <div className="hidden border-r border-border md:block">
+              <ScenarioSidebar
+                scenarios={SCENARIO_LIBRARY}
+                activeScenarioId={activeScenarioId}
+                onSelectScenario={handleSelectScenario}
+              />
+            </div>
+
+            <div className="flex h-[500px] min-h-0 flex-col">
               <OutputPane
                 entries={entries}
                 selectedEntryId={selectedEntry?.id ?? null}
@@ -384,25 +372,47 @@ export function WorkbenchShell() {
               <CommandInput
                 value={commandInput}
                 isRunning={isRunning}
-                suggestions={suggestions}
-                helperText={helperText}
                 onChange={setCommandInput}
                 onSubmit={() => runCommand(commandInput)}
                 onKeyDown={handleInputKeyDown}
-                onSuggestionSelect={handlePrefillCommand}
                 inputRef={inputRef}
               />
             </div>
           </div>
 
-          <div className="min-h-0 bg-muted/20">
-            <GovernanceInspector
-              inspector={selectedEntry?.artifact.inspector ?? null}
-              onQuickAction={handleQuickAction}
-              copiedCommand={copiedCommand}
-            />
+          <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+            <a
+              href="https://docs.keelapi.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary transition hover:text-foreground"
+            >
+              <span aria-hidden="true">▸</span> Open docs
+            </a>
+            <div className="hidden font-mono text-[10px] text-muted-foreground md:block">
+              Tab autocomplete · ↑↓ history · ⌘K focus
+            </div>
           </div>
-        </section>
+        </div>
+
+        <div className="mt-5 flex items-center gap-6">
+          <a
+            href="https://docs.keelapi.com/quickstart"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[13px] text-muted-foreground transition hover:text-foreground"
+          >
+            Quickstart guide →
+          </a>
+          <a
+            href="https://docs.keelapi.com/reference"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[13px] text-muted-foreground transition hover:text-foreground"
+          >
+            API reference →
+          </a>
+        </div>
       </main>
     </div>
   );
