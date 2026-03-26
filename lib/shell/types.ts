@@ -1,94 +1,160 @@
+export const GOVERNANCE_STAGE_ORDER = [
+  "auth",
+  "authorization",
+  "freshness",
+  "policy",
+  "budget",
+  "firewall",
+  "routing",
+  "execution",
+  "terminal-accounting",
+  "audit",
+] as const;
+
+export type GovernanceStageId = (typeof GOVERNANCE_STAGE_ORDER)[number];
+export type GovernanceStageStatus = "completed" | "blocked" | "skipped" | "pending";
+export type ShellOutputTone = "success" | "denied" | "info" | "error";
+export type PermitDecision = "allow" | "deny";
+export type RequestStatus = "completed" | "denied";
+
+export type CommandCategory =
+  | "permits"
+  | "execution"
+  | "explainability"
+  | "accounting"
+  | "sandbox";
+
 export type ShellCommandName =
   | "help"
-  | "sandbox-status"
   | "permits-create"
   | "execute"
   | "explain"
   | "timeline"
   | "usage"
-  | "policy-show"
-  | "budget-show"
-  | "sandbox-reset"
-  | "routing-preview";
+  | "sandbox-reset";
+
+export type CommandDefinition = {
+  name: ShellCommandName;
+  category: CommandCategory;
+  tokens: readonly string[];
+  syntax: string;
+  description: string;
+  examples: readonly string[];
+  helperText: string;
+  requiredFlags?: readonly string[];
+  optionalFlags?: readonly string[];
+  positionals?: readonly string[];
+};
 
 export type ShellCommand = {
   raw: string;
   name: ShellCommandName;
   flags: Record<string, string>;
   positionals: string[];
+  definition: CommandDefinition;
 };
 
-export type ShellOutputTone = "success" | "denied" | "info" | "error";
+export type TerminalValue = string | number | string[];
 
-export type ShellDetailValue = string | number | string[];
-
-export type ShellOutput = {
-  tone: ShellOutputTone;
-  summary: string;
-  details: Array<{
-    label: string;
-    value: ShellDetailValue;
-  }>;
-  isSystemNote?: boolean;
+export type TerminalRow = {
+  label: string;
+  value: TerminalValue;
 };
 
-export type PermitDecision = "allowed" | "denied";
-export type RequestStatus = "completed" | "denied";
-
-export type TimelineStage =
-  | "auth"
-  | "normalize"
-  | "permit"
-  | "firewall"
-  | "routing"
-  | "dispatch"
-  | "reconcile"
-  | "ledger"
-  | "emit";
-
-export type TimelineEvent = {
-  id: string;
-  stage: TimelineStage;
-  status: "completed" | "skipped";
+export type GovernanceStageState = {
+  stage: GovernanceStageId;
+  status: GovernanceStageStatus;
   timestamp: string;
   detail: string;
 };
 
+export type CommandQuickAction = {
+  label: string;
+  command: string;
+};
+
+export type GovernanceUsageSummary = {
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  actualCostUsd?: number;
+  totalRequests?: number;
+  completedRequests?: number;
+  deniedRequests?: number;
+  totalActualCostUsd?: number;
+};
+
+export type GovernanceInspectorState = {
+  title: string;
+  subtitle: string;
+  decision?: PermitDecision;
+  why?: string[];
+  matchedPolicy?: string;
+  budgetBeforeUsd?: number;
+  budgetAfterUsd?: number;
+  providerResolved?: string | null;
+  modelResolved?: string | null;
+  requestId?: string | null;
+  permitId?: string | null;
+  usage?: GovernanceUsageSummary;
+  lifecycle?: GovernanceStageState[];
+  traceId?: string;
+  summaryRows?: TerminalRow[];
+  quickActions: CommandQuickAction[];
+};
+
+export type CommandArtifact = {
+  commandName: ShellCommandName;
+  tone: ShellOutputTone;
+  headline: string;
+  rows: TerminalRow[];
+  inspector?: GovernanceInspectorState;
+};
+
+export type PermitReasonCode =
+  | "policy_passed"
+  | "model_not_allowed"
+  | "sandbox_budget_exceeded"
+  | "provider_not_available"
+  | "sandbox_request_limit_reached";
+
 export type PermitRecord = {
   id: string;
   decision: PermitDecision;
-  reason: string;
-  project: string;
-  policy: string;
+  reasonCode: PermitReasonCode;
+  why: string[];
+  matchedPolicy: string;
   model: string;
-  provider: string | null;
+  provider: string;
   input: string;
   estimatedCostUsd: number;
+  budgetBeforeUsd: number;
+  budgetAfterUsd: number;
   timestamp: string;
+  lifecycle: GovernanceStageState[];
 };
 
 export type RequestRecord = {
   id: string;
   permitId: string;
+  decision: PermitDecision;
+  reasonCode: PermitReasonCode;
+  why: string[];
+  status: RequestStatus;
   provider: string;
   model: string;
   input: string;
-  decision: PermitDecision;
-  reason: string;
-  status: RequestStatus;
-  routing: string;
+  matchedPolicy: string;
+  routing: string | null;
   inputTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
   actualCostUsd: number;
+  budgetBeforeUsd: number;
+  budgetAfterUsd: number;
+  traceId: string;
   timestamp: string;
-  timeline: TimelineEvent[];
-  audit: {
-    policy: string;
-    project: string;
-    traceId: string;
-    actor: string;
-  };
+  lifecycle: GovernanceStageState[];
 };
 
 export type UsageLedger = {
@@ -103,18 +169,18 @@ export type UsageLedger = {
 export type SessionState = {
   project: string;
   policy: string;
+  budgetUsdTotal: number;
   budgetUsdRemaining: number;
+  requestLimit: number;
+  requestsRemaining: number;
   allowedModels: string[];
   blockedPremiumModels: string[];
   providersAvailable: string[];
-  requestsRemaining: number;
   permitCounter: number;
   requestCounter: number;
-  eventCounter: number;
   traceCounter: number;
+  eventCounter: number;
   commandCount: number;
-  hasShownAllowedNote: boolean;
-  hasShownDeniedNote: boolean;
   lastPermitId: string | null;
   lastRequestId: string | null;
   permits: PermitRecord[];
@@ -122,8 +188,24 @@ export type SessionState = {
   usage: UsageLedger;
 };
 
-export type ScenarioResult = {
-  output: ShellOutput;
-  auxiliaryOutputs?: ShellOutput[];
+export type CommandRunResult = {
   session: SessionState;
+  artifact: CommandArtifact;
+};
+
+export type WorkbenchEntry = {
+  id: string;
+  command: string;
+  artifact: CommandArtifact;
+  createdAt: string;
+};
+
+export type WorkbenchScenario = {
+  id: string;
+  title: string;
+  category: CommandCategory;
+  description: string;
+  helperText: string;
+  command: string | ((session: SessionState) => string);
+  recommended?: boolean;
 };

@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Keel Shell",
-  description: "Explore how AI requests are decided, enforced, and audited in Keel.",
+  title: "Keel Workbench",
+  description:
+    "Explore permit-driven AI execution governance with deterministic command output, lifecycle replay, and accounting.",
 };
 
 const themeBootstrapScript = `
