@@ -4,6 +4,29 @@ import type { KeyboardEvent, RefObject } from "react";
 
 import type { WorkbenchEntry } from "@/lib/shell/types";
 
+const KEEL_ASCII = `  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    ###################################
+     ##################################
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       *******************************
+        ******************************
+        >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+         <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+         <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+         ============================
+         ===========================
+         +++++++++++++++++++++++++++
+          ++++++++++++++++++++++++++
+          --------------------------
+          -------------------------
+          ~~~~~~~~~~~~~~~~~~~~~~~~~
+           ~~~~~~~~~~~~~~~~~~~~~~~~
+           ________________________
+           ________________________`;
+
 type OutputPaneProps = {
   entries: WorkbenchEntry[];
   selectedEntryId: string | null;
@@ -51,11 +74,18 @@ export function OutputPane({
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
       {entries.length === 0 ? (
         <div className="px-4 py-5 font-mono">
-          <p className="text-[12px] text-foreground">Welcome to Keel Shell!</p>
+          <pre
+            className="mx-auto w-fit text-[9px] leading-[1.3] text-muted-foreground/25 select-none"
+            aria-hidden="true"
+          >
+            {KEEL_ASCII}
+          </pre>
+          <p className="mt-4 text-[12px] text-foreground">Welcome to Keel Shell!</p>
           <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-            A sandboxed playground for permit-driven AI governance. Try:
+            Keel Shell is a browser-based shell for permit-driven AI governance.
+            You can use it to explore execution control in sandbox mode:
           </p>
-          <div className="mt-4 space-y-1">
+          <div className="mt-3 space-y-1">
             {starterCommands.map((command) => (
               <button
                 key={command}

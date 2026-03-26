@@ -346,17 +346,23 @@ export function WorkbenchShell() {
           </p>
         </div>
 
-        <div className="overflow-hidden border border-border bg-card">
-          <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="hidden border-r border-border md:block">
-              <ScenarioSidebar
-                scenarios={SCENARIO_LIBRARY}
-                activeScenarioId={activeScenarioId}
-                onSelectScenario={handleSelectScenario}
-              />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-sm md:block">
+            <ScenarioSidebar
+              scenarios={SCENARIO_LIBRARY}
+              activeScenarioId={activeScenarioId}
+              onSelectScenario={handleSelectScenario}
+            />
+          </div>
+
+          <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center gap-1.5 border-b border-border/70 px-4 py-2.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
             </div>
 
-            <div className="flex h-[500px] min-h-0 flex-col">
+            <div className="flex h-[480px] min-h-0 flex-col">
               <OutputPane
                 entries={entries}
                 selectedEntryId={selectedEntry?.id ?? null}
@@ -378,24 +384,24 @@ export function WorkbenchShell() {
                 inputRef={inputRef}
               />
             </div>
-          </div>
 
-          <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
-            <a
-              href="https://docs.keelapi.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary transition hover:text-foreground"
-            >
-              <span aria-hidden="true">▸</span> Open docs
-            </a>
-            <div className="hidden font-mono text-[10px] text-muted-foreground md:block">
-              Tab autocomplete · ↑↓ history · ⌘K focus
+            <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+              <a
+                href="https://docs.keelapi.com"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary transition hover:text-foreground"
+              >
+                <span aria-hidden="true">▸</span> Open docs
+              </a>
+              <div className="hidden font-mono text-[10px] text-muted-foreground md:block">
+                Tab autocomplete · ↑↓ history · ⌘K focus
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-5 flex items-center gap-6">
+        <div className="mt-6 flex items-center justify-between">
           <a
             href="https://docs.keelapi.com/quickstart"
             target="_blank"
@@ -405,7 +411,7 @@ export function WorkbenchShell() {
             Quickstart guide →
           </a>
           <a
-            href="https://docs.keelapi.com/reference"
+            href="https://docs.keelapi.com/api-reference"
             target="_blank"
             rel="noreferrer"
             className="text-[13px] text-muted-foreground transition hover:text-foreground"
