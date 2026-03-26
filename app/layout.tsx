@@ -6,6 +6,13 @@ export const metadata: Metadata = {
   title: "Keel Workbench",
   description:
     "Explore permit-driven AI execution governance with deterministic command output, lifecycle replay, and accounting.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico?v=3" },
+      { url: "/favicon.svg?v=3", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png?v=3" }],
+  },
 };
 
 const themeBootstrapScript = `
