@@ -3,65 +3,56 @@
 import type { GovernanceStageState } from "@/lib/shell/types";
 
 const stageLabels: Record<GovernanceStageState["stage"], string> = {
-  auth: "Auth",
-  authorization: "Authorization",
-  freshness: "Freshness",
-  policy: "Policy",
-  budget: "Budget",
-  firewall: "Firewall",
-  routing: "Routing",
-  execution: "Execution",
-  "terminal-accounting": "Accounting",
-  audit: "Audit",
+  auth: "auth",
+  authorization: "authorization",
+  freshness: "freshness",
+  policy: "policy",
+  budget: "budget",
+  firewall: "firewall",
+  routing: "routing",
+  execution: "execution",
+  "terminal-accounting": "accounting",
+  audit: "audit",
 };
 
-function getStageClasses(status: GovernanceStageState["status"]) {
+function statusClasses(status: GovernanceStageState["status"]) {
   switch (status) {
     case "completed":
-      return "border-primary/30 bg-primary/10 text-primary";
+      return "text-primary";
     case "blocked":
-      return "border-destructive/30 bg-destructive/10 text-destructive";
+      return "text-destructive";
     case "skipped":
-      return "border-border bg-secondary/70 text-muted-foreground";
+      return "text-muted-foreground";
     case "pending":
-      return "border-border bg-background text-muted-foreground";
+      return "text-muted-foreground";
   }
 }
 
-export function StageTimeline({
-  stages,
-}: {
-  stages: GovernanceStageState[];
-}) {
+export function StageTimeline({ stages }: { stages: GovernanceStageState[] }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-0">
       {stages.map((stage, index) => (
-        <div key={`${stage.stage}-${stage.timestamp}`} className="grid grid-cols-[18px_minmax(0,1fr)] gap-2.5">
-          <div className="relative flex justify-center pt-1">
+        <div
+          key={`${stage.stage}-${stage.timestamp}`}
+          className="grid grid-cols-[12px_80px_58px_minmax(0,1fr)] gap-2 border-b border-border/60 py-1.5"
+        >
+          <div className="relative">
             <span
-              className={`h-2.5 w-2.5 rounded-full border ${getStageClasses(stage.status)}`}
               aria-hidden="true"
+              className={`absolute left-1 top-1 h-1.5 w-1.5 rounded-full bg-current ${statusClasses(stage.status)}`}
             />
             {index < stages.length - 1 ? (
               <span
                 aria-hidden="true"
-                className="absolute top-4 h-[calc(100%+0.5rem)] w-px bg-border"
+                className="absolute left-[6px] top-3 h-[calc(100%+0.25rem)] w-px bg-border/80"
               />
             ) : null}
           </div>
-          <div className="space-y-1 pb-2">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-sm font-medium text-foreground">
-                {stageLabels[stage.stage]}
-              </div>
-              <div
-                className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] ${getStageClasses(stage.status)}`}
-              >
-                {stage.status}
-              </div>
-            </div>
-            <p className="text-[13px] leading-5 text-muted-foreground">{stage.detail}</p>
+          <div className="font-mono text-[11px] text-foreground">{stageLabels[stage.stage]}</div>
+          <div className={`font-mono text-[10px] uppercase tracking-[0.12em] ${statusClasses(stage.status)}`}>
+            {stage.status}
           </div>
+          <div className="text-[11px] leading-5 text-muted-foreground">{stage.detail}</div>
         </div>
       ))}
     </div>

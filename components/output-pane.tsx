@@ -21,11 +21,10 @@ function toneClasses(tone: WorkbenchEntry["artifact"]["tone"]) {
     case "success":
       return "text-primary";
     case "denied":
-      return "text-destructive";
     case "error":
       return "text-destructive";
     case "info":
-      return "text-[#8cb7ff]";
+      return "text-foreground";
   }
 }
 
@@ -49,59 +48,44 @@ export function OutputPane({
   scrollRef,
 }: OutputPaneProps) {
   return (
-    <section className="overflow-hidden bg-[#07111f]">
-      <div className="border-b border-white/6 px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-              Command surface
-            </div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Approved grammar only. Deterministic sandbox. No live providers or system access.
-            </p>
-          </div>
-          <div className="hidden font-mono text-[11px] text-muted-foreground xl:block">
-            enter run • tab complete • up/down history
-          </div>
+    <section className="flex min-h-0 flex-1 flex-col bg-background">
+      <div className="border-b border-border/80 px-3 py-2">
+        <div className="flex items-center justify-between gap-4 font-mono text-[11px] text-muted-foreground">
+          <div>session log</div>
+          <div className="hidden md:block">approved grammar / deterministic sandbox / keyboard first</div>
         </div>
       </div>
 
-      <div ref={scrollRef} className="h-[640px] overflow-y-auto px-4 py-3">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {entries.length === 0 ? (
-          <div className="mx-auto max-w-2xl px-2 py-8 text-left">
-            <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-              Empty console
+          <div className="border-b border-border/70 px-3 py-2">
+            <div className="font-mono text-[11px] text-muted-foreground">
+              await command. preset-linked starters:
             </div>
-            <h3 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-foreground">
-              Learn governance before execution
-            </h3>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Start with a scenario on the left or run one of the approved commands below.
-              Each result produces both terminal output and a structured governance view.
-            </p>
-            <div className="mt-5 space-y-1.5">
+            <div className="mt-2 space-y-0.5">
               {starterCommands.map((command) => (
                 <button
                   key={command}
                   type="button"
                   onClick={() => onPrefillCommand(command)}
-                  className="block w-full border border-white/6 bg-white/[0.02] px-3 py-2 text-left font-mono text-xs text-foreground transition hover:border-primary/35 hover:bg-primary/5"
+                  className="block w-full px-1 py-1 text-left font-mono text-[12px] text-foreground transition hover:bg-foreground/[0.02]"
                 >
+                  <span className="mr-2 text-muted-foreground">›</span>
                   {command}
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="pb-3">
             {entries.map((entry) => {
               const isSelected = entry.id === selectedEntryId;
 
               return (
-                <div
+                <article
                   key={entry.id}
                   onClick={() => onSelectEntry(entry.id)}
-                  onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+                  onKeyDown={(event: KeyboardEvent<HTMLElement>) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       onSelectEntry(entry.id);
@@ -109,76 +93,64 @@ export function OutputPane({
                   }}
                   role="button"
                   tabIndex={0}
-                  className={`block w-full border-l-2 border-b border-white/6 px-3 py-3 text-left transition ${
-                    isSelected
-                      ? "border-l-primary bg-white/[0.035]"
-                      : "border-l-transparent hover:border-l-white/15 hover:bg-white/[0.018]"
+                  className={`border-b border-border/70 px-3 py-2 text-left outline-none transition ${
+                    isSelected ? "bg-foreground/[0.03]" : "hover:bg-foreground/[0.015]"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="font-mono text-sm text-foreground">
-                        <span className="text-muted-foreground">sandbox-demo</span>
-                        <span className="mx-2 text-primary">$</span>
-                        <span className="break-all">{entry.command}</span>
-                      </div>
-                      <div className={`mt-2 text-sm font-medium ${toneClasses(entry.artifact.tone)}`}>
-                        {entry.artifact.headline}
-                      </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 font-mono text-[13px] text-foreground">
+                      <span className="mr-2 text-muted-foreground">›</span>
+                      <span className="break-all">{entry.command}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="hidden text-xs text-muted-foreground sm:block">
+                    <div className="flex items-center gap-3">
+                      <div className="hidden font-mono text-[10px] text-muted-foreground sm:block">
                         {new Date(entry.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </div>
-                      {isSelected ? (
-                        <span className="font-mono text-[11px] text-primary">selected</span>
-                      ) : null}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onCopyCommand(entry.command);
+                        }}
+                        className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground"
+                      >
+                        {copiedCommand === entry.command ? "copied" : "copy"}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-3 space-y-1.5 font-mono text-[12px] leading-6 text-muted-foreground">
+                  <div className={`mt-1.5 font-mono text-[12px] ${toneClasses(entry.artifact.tone)}`}>
+                    {entry.artifact.headline}
+                  </div>
+
+                  <div className="mt-1.5 grid gap-y-1 font-mono text-[12px] leading-5 text-muted-foreground">
                     {entry.artifact.rows.map((row) => (
-                      <div key={`${entry.id}-${row.label}`} className="grid gap-2 sm:grid-cols-[138px_minmax(0,1fr)]">
-                        <div>{row.label}</div>
+                      <div
+                        key={`${entry.id}-${row.label}`}
+                        className="grid gap-2 sm:grid-cols-[132px_minmax(0,1fr)]"
+                      >
+                        <div className="text-[11px]">{row.label}</div>
                         <pre className="whitespace-pre-wrap break-words text-foreground">
                           {renderValue(row.value)}
                         </pre>
                       </div>
                     ))}
                   </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="text-[11px] text-muted-foreground">
-                      Select this result to inspect governance details.
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onCopyCommand(entry.command);
-                      }}
-                      className="px-1.5 py-1 text-[11px] text-muted-foreground transition hover:text-primary"
-                    >
-                      {copiedCommand === entry.command ? "Copied" : "Copy"}
-                    </button>
-                  </div>
-                </div>
+                </article>
               );
             })}
 
             {pendingCommand ? (
-              <div className="border-l-2 border-l-primary border-b border-white/6 px-3 py-3">
-                <div className="font-mono text-sm text-foreground">
-                  <span className="text-muted-foreground">sandbox-demo</span>
-                  <span className="mx-2 text-primary">$</span>
+              <div className="border-b border-border/70 px-3 py-2">
+                <div className="font-mono text-[13px] text-foreground">
+                  <span className="mr-2 text-muted-foreground">›</span>
                   <span className="break-all">{pendingCommand}</span>
                 </div>
-                <div className="mt-2 flex items-center gap-3 font-mono text-xs text-primary">
-                  <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-primary" />
-                  evaluating deterministic governance plan...
+                <div className="mt-1.5 font-mono text-[11px] text-primary">
+                  evaluating deterministic governance path...
                 </div>
               </div>
             ) : null}

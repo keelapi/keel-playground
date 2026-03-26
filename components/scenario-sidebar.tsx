@@ -12,8 +12,8 @@ type ScenarioSidebarProps = {
 
 const categoryLabels: Record<WorkbenchScenario["category"], string> = {
   permits: "Permit-first",
-  execution: "Governed execution",
-  explainability: "Explainability",
+  execution: "Execution",
+  explainability: "Inspect",
   accounting: "Accounting",
   sandbox: "Sandbox",
 };
@@ -33,52 +33,47 @@ export function ScenarioSidebar({
   );
 
   return (
-    <aside className="overflow-hidden rounded-lg border border-border/70 bg-card/35">
-      <div className="border-b border-border/70 px-3 py-3">
-        <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-          Scenario presets
+    <aside className="flex h-full min-h-0 flex-col">
+      <div className="border-b border-border/80 px-3 py-2">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          preset index
         </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Prefill approved commands, then run from the console.
-        </p>
       </div>
 
-      <div className="max-h-[calc(100vh-11rem)] space-y-4 overflow-y-auto px-2 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {Object.entries(groupedScenarios).map(([category, categoryScenarios]) => (
-          <div key={category}>
-            <div className="mb-1.5 px-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+          <section key={category} className="mb-3">
+            <div className="mb-1 px-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
               {categoryLabels[category as WorkbenchScenario["category"]]}
             </div>
-            <div className="space-y-1">
+            <div>
               {categoryScenarios.map((scenario) => {
                 const isActive = scenario.id === activeScenarioId;
+                const command = resolveScenarioCommand(scenario, session);
 
                 return (
                   <button
                     key={scenario.id}
                     type="button"
                     onClick={() => onSelectScenario(scenario.id)}
-                    className={`w-full rounded-md border-l px-2.5 py-2 text-left transition ${
+                    className={`block w-full border-l px-2 py-1.5 text-left transition ${
                       isActive
-                        ? "border-primary bg-primary/8 text-foreground"
-                        : "border-transparent text-foreground hover:border-border hover:bg-background/40"
+                        ? "border-l-border bg-foreground/[0.03]"
+                        : "border-l-transparent hover:border-l-border hover:bg-foreground/[0.02]"
                     }`}
                   >
-                    <div className="text-sm font-medium leading-5">{scenario.title}</div>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {scenario.description}
-                    </p>
-                    <div className="mt-2 truncate font-mono text-[11px] text-muted-foreground">
-                      {resolveScenarioCommand(scenario, session)}
+                    <div className="truncate text-[12px] text-foreground">{scenario.title}</div>
+                    <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+                      {command}
                     </div>
-                    <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-                      {scenario.helperText}
-                    </p>
+                    <div className="mt-0.5 truncate text-[10px] leading-4 text-muted-foreground">
+                      {scenario.description}
+                    </div>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
         ))}
       </div>
     </aside>

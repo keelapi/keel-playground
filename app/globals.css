@@ -4,50 +4,50 @@
 
 @layer base {
   :root {
-    --background: 215 36% 96%;
-    --foreground: 217 33% 13%;
+    --background: 42 23% 97%;
+    --foreground: 220 22% 12%;
     --card: 0 0% 100%;
     --card-foreground: 217 33% 13%;
     --popover: 0 0% 100%;
     --popover-foreground: 217 33% 13%;
-    --primary: 209 96% 62%;
+    --primary: 214 79% 46%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 214 33% 93%;
+    --secondary: 40 17% 94%;
     --secondary-foreground: 217 33% 13%;
-    --muted: 214 24% 92%;
-    --muted-foreground: 218 15% 44%;
-    --accent: 214 24% 92%;
+    --muted: 40 16% 93%;
+    --muted-foreground: 220 10% 38%;
+    --accent: 40 16% 93%;
     --accent-foreground: 217 33% 13%;
     --destructive: 0 78% 55%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 19% 86%;
-    --input: 217 19% 86%;
-    --ring: 209 96% 62%;
-    --radius: 0.9rem;
+    --border: 220 13% 83%;
+    --input: 220 13% 83%;
+    --ring: 214 79% 46%;
+    --radius: 0.125rem;
     --keel-success: 147 68% 47%;
     --keel-warning: 38 92% 56%;
   }
 
   .dark {
-    --background: 216 38% 8%;
-    --foreground: 214 38% 96%;
-    --card: 217 34% 10%;
+    --background: 220 22% 8%;
+    --foreground: 214 26% 92%;
+    --card: 220 24% 8%;
     --card-foreground: 210 40% 98%;
-    --popover: 217 34% 10%;
+    --popover: 220 24% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 207 95% 66%;
+    --primary: 212 86% 68%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 218 26% 15%;
+    --secondary: 220 16% 10%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 218 23% 14%;
-    --muted-foreground: 214 16% 67%;
-    --accent: 218 23% 14%;
+    --muted: 220 16% 10%;
+    --muted-foreground: 214 12% 61%;
+    --accent: 220 16% 10%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 74% 58%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 20% 18%;
-    --input: 217 20% 18%;
-    --ring: 207 95% 66%;
+    --border: 220 12% 18%;
+    --input: 220 12% 18%;
+    --ring: 212 86% 68%;
     --keel-success: 147 70% 52%;
     --keel-warning: 38 92% 55%;
   }
@@ -66,13 +66,10 @@
     @apply bg-background text-foreground antialiased;
     min-height: 100vh;
     margin: 0;
-    background:
-      radial-gradient(circle at top left, hsl(var(--primary) / 0.08), transparent 18%),
-      linear-gradient(180deg, hsl(var(--background)) 0%, hsl(216 34% 7%) 100%);
+    background: hsl(var(--background));
     font-family:
-      "Suisse Intl",
-      "Aptos",
       "IBM Plex Sans",
+      "Suisse Intl",
       -apple-system,
       BlinkMacSystemFont,
       sans-serif;
@@ -94,9 +91,9 @@
   code,
   textarea {
     font-family:
-      "Berkeley Mono",
-      "SF Mono",
       "IBM Plex Mono",
+      "SF Mono",
+      "Berkeley Mono",
       Monaco,
       Consolas,
       monospace;
@@ -110,14 +107,14 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    border-bottom: 1px solid hsl(var(--border) / 0.72);
-    background: hsl(var(--background) / 0.84);
-    backdrop-filter: blur(18px);
+    border-bottom: 1px solid hsl(var(--border) / 0.9);
+    background: hsl(var(--background) / 0.96);
+    backdrop-filter: blur(10px);
   }
 
   .site-header__inner,
   .site-main {
-    width: min(1460px, calc(100% - 2rem));
+    width: 100%;
     margin: 0 auto;
   }
 
@@ -126,7 +123,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    min-height: 56px;
+    min-height: 47px;
+    padding: 0 12px;
   }
 
   .site-header__actions {
@@ -138,27 +136,26 @@
   .site-main {
     display: flex;
     flex-direction: column;
-    padding-top: 1rem;
-    padding-bottom: 1.25rem;
+    padding: 0;
   }
 
   .keel-header-brand {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
-    min-height: 40px;
+    gap: 8px;
+    min-height: 28px;
   }
 
   .keel-header-brand__icon {
-    width: 18px;
-    height: 19px;
+    width: 16px;
+    height: 17px;
     flex: 0 0 auto;
   }
 
   .keel-header-brand__link {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     line-height: 1;
     color: hsl(var(--foreground));
     transition: color 0.18s ease;
@@ -176,31 +173,31 @@
   .keel-header-brand__copy {
     display: inline-flex;
     align-items: baseline;
-    gap: 7px;
+    gap: 6px;
     min-width: 0;
     line-height: 1;
   }
 
   .keel-header-brand__wordmark {
     color: inherit;
-    font-size: 1.12rem;
-    font-weight: 680;
-    letter-spacing: -0.04em;
+    font-size: 0.92rem;
+    font-weight: 620;
+    letter-spacing: -0.03em;
     white-space: nowrap;
   }
 
   .keel-header-brand__separator {
     color: hsl(var(--muted-foreground));
-    font-size: 0.92rem;
+    font-size: 0.72rem;
     font-weight: 500;
   }
 
   .keel-header-brand__title,
   .keel-header-brand__separator {
     color: hsl(var(--muted-foreground));
-    font-size: 0.92rem;
+    font-size: 0.74rem;
     font-weight: 500;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.01em;
   }
 
   .keel-header-brand__copy,
@@ -210,30 +207,27 @@
   }
 
   .header-link {
-    display: none;
-    min-height: 32px;
+    display: inline-flex;
+    min-height: 24px;
     align-items: center;
     justify-content: center;
-    border-radius: calc(var(--radius) - 0.25rem);
-    padding: 0 10px;
+    border-radius: 0;
+    padding: 0 2px;
     color: hsl(var(--muted-foreground));
-    font-size: 0.84rem;
+    font-size: 0.72rem;
     transition:
-      background-color 0.18s ease,
       color 0.18s ease,
       border-color 0.18s ease;
-    border: 1px solid transparent;
+    border: 0;
   }
 
   .header-link:hover {
-    background: hsl(var(--secondary));
-    border-color: hsl(var(--border));
     color: hsl(var(--foreground));
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -242,35 +236,26 @@
 
   ::-webkit-scrollbar-thumb {
     border: 2px solid transparent;
-    border-radius: 999px;
-    background: hsl(var(--border));
+    border-radius: 6px;
+    background: hsl(var(--border) / 0.9);
     background-clip: padding-box;
   }
 
-  @media (min-width: 640px) {
-    .header-link {
-      display: inline-flex;
-    }
-  }
-
   @media (max-width: 900px) {
-    .site-header__inner,
-    .site-header__actions {
-      flex-direction: column;
-      align-items: stretch;
+    .site-header__inner {
+      gap: 10px;
     }
 
     .site-header__actions {
-      gap: 10px;
-      padding-bottom: 0.75rem;
+      gap: 6px;
     }
 
     .keel-header-brand__copy {
-      gap: 8px;
+      gap: 5px;
     }
 
     .keel-header-brand__separator {
-      display: none;
+      display: inline-flex;
     }
   }
 }

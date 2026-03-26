@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { getAutocompleteSuggestions } from "@/lib/shell/commandRegistry";
 import { runWorkbenchCommand } from "@/lib/shell/commandRunner";
 import { getScenarioById, resolveScenarioCommand, SCENARIO_LIBRARY } from "@/lib/shell/scenarios";
-import { createInitialSessionState, formatUsd } from "@/lib/shell/sessionState";
+import { createInitialSessionState } from "@/lib/shell/sessionState";
 import type { SessionState, WorkbenchEntry } from "@/lib/shell/types";
 
 const SESSION_STORAGE_KEY = "keel-playground-workbench";
@@ -330,14 +330,19 @@ export function WorkbenchShell() {
           <span className="keel-header-brand">
             <a href="https://keelapi.com" className="keel-header-brand__link">
               <img className="keel-header-brand__icon" src="/keel.svg" alt="" aria-hidden="true" />
-              <span className="keel-header-brand__wordmark">Keel</span>
-            </a>
-            <span className="keel-header-brand__copy">
-              <span className="keel-header-brand__separator" aria-hidden="true">|</span>
+              <span className="keel-header-brand__copy">
+                <span className="keel-header-brand__wordmark">Keel</span>
+                <span className="keel-header-brand__separator" aria-hidden="true">
+                  /
+                </span>
+              </span>
               <span className="keel-header-brand__title">Workbench</span>
-            </span>
+            </a>
           </span>
           <div className="site-header__actions">
+            <div className="hidden font-mono text-[11px] text-muted-foreground lg:block">
+              approved grammar / deterministic local / deep links
+            </div>
             <a
               href="https://docs.keelapi.com/quickstart"
               target="_blank"
@@ -351,74 +356,54 @@ export function WorkbenchShell() {
         </div>
       </header>
 
-      <main className="site-main gap-4">
-        <section className="flex flex-col gap-3 border-b border-border/70 pb-3 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-[1.55rem] font-semibold tracking-[-0.04em] text-foreground">
-              Keel Workbench
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Evaluate permit-driven AI execution governance before execution, with deterministic command output, explainability, timeline replay, and accounting.
-            </p>
+      <main className="site-main">
+        <section className="grid h-[calc(100vh-47px)] min-h-[calc(100vh-47px)] grid-cols-1 border-y border-border/80 md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_300px]">
+          <div className="min-h-0 border-b border-border/80 bg-muted/20 md:border-b-0 md:border-r">
+            <ScenarioSidebar
+              scenarios={SCENARIO_LIBRARY}
+              activeScenarioId={activeScenarioId}
+              session={session}
+              onSelectScenario={handleSelectScenario}
+            />
           </div>
-          <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            <MetaChip label="project" value={session.project} />
-            <MetaChip label="budget" value={`$${formatUsd(session.budgetUsdRemaining)}`} />
-            <MetaChip label="requests" value={String(session.requestsRemaining)} />
-            <MetaChip label="mode" value="sandboxed" />
+
+          <div className="min-h-0 border-b border-border/80 md:border-b-0 xl:border-r">
+            <div className="flex h-full min-h-0 flex-col bg-background">
+              <OutputPane
+                entries={entries}
+                selectedEntryId={selectedEntry?.id ?? null}
+                pendingCommand={pendingCommand}
+                copiedCommand={copiedCommand}
+                onSelectEntry={setSelectedEntryId}
+                onCopyCommand={(command) => void handleCopyCommand(command)}
+                onPrefillCommand={handlePrefillCommand}
+                starterCommands={starterCommands}
+                scrollRef={outputScrollRef}
+              />
+
+              <CommandInput
+                value={commandInput}
+                isRunning={isRunning}
+                suggestions={suggestions}
+                helperText={helperText}
+                onChange={setCommandInput}
+                onSubmit={() => runCommand(commandInput)}
+                onKeyDown={handleInputKeyDown}
+                onSuggestionSelect={handlePrefillCommand}
+                inputRef={inputRef}
+              />
+            </div>
           </div>
-        </section>
 
-        <section className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)_300px]">
-          <ScenarioSidebar
-            scenarios={SCENARIO_LIBRARY}
-            activeScenarioId={activeScenarioId}
-            session={session}
-            onSelectScenario={handleSelectScenario}
-          />
-
-          <div className="overflow-hidden rounded-lg border border-border/70 bg-[#07111f] shadow-[0_24px_80px_-60px_rgba(0,0,0,0.85)]">
-            <OutputPane
-              entries={entries}
-              selectedEntryId={selectedEntry?.id ?? null}
-              pendingCommand={pendingCommand}
+          <div className="min-h-0 bg-muted/20">
+            <GovernanceInspector
+              inspector={selectedEntry?.artifact.inspector ?? null}
+              onQuickAction={handleQuickAction}
               copiedCommand={copiedCommand}
-              onSelectEntry={setSelectedEntryId}
-              onCopyCommand={(command) => void handleCopyCommand(command)}
-              onPrefillCommand={handlePrefillCommand}
-              starterCommands={starterCommands}
-              scrollRef={outputScrollRef}
-            />
-
-            <CommandInput
-              value={commandInput}
-              isRunning={isRunning}
-              suggestions={suggestions}
-              helperText={helperText}
-              onChange={setCommandInput}
-              onSubmit={() => runCommand(commandInput)}
-              onKeyDown={handleInputKeyDown}
-              onSuggestionSelect={handlePrefillCommand}
-              inputRef={inputRef}
             />
           </div>
-
-          <GovernanceInspector
-            inspector={selectedEntry?.artifact.inspector ?? null}
-            onQuickAction={handleQuickAction}
-            copiedCommand={copiedCommand}
-          />
         </section>
       </main>
     </div>
-  );
-}
-
-function MetaChip({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-md border border-border/70 bg-background/25 px-2.5 py-1 font-mono normal-case tracking-normal">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </span>
   );
 }
