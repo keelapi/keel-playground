@@ -14,7 +14,7 @@ import { createInitialSessionState } from "@/lib/shell/sessionState";
 import type { SessionState, WorkbenchEntry } from "@/lib/shell/types";
 
 const SESSION_STORAGE_KEY = "keel-playground-workbench";
-const UI_STATE_VERSION = 4;
+const UI_STATE_VERSION = 5;
 const COMMAND_DELAY_MS = 220;
 
 type StoredUiState = {
