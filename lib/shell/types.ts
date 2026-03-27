@@ -1,25 +1,24 @@
 export const GOVERNANCE_STAGE_ORDER = [
   "auth",
-  "authorization",
-  "freshness",
-  "policy",
-  "budget",
+  "normalize",
+  "permit",
   "firewall",
   "routing",
-  "execution",
-  "terminal-accounting",
-  "audit",
+  "dispatch",
+  "reconcile",
+  "emit",
 ] as const;
 
 export type GovernanceStageId = (typeof GOVERNANCE_STAGE_ORDER)[number];
 export type GovernanceStageStatus = "completed" | "blocked" | "skipped" | "pending";
 export type ShellOutputTone = "success" | "denied" | "info" | "error";
-export type PermitDecision = "allow" | "deny";
+export type PermitDecision = "allow" | "deny" | "challenge";
 export type RequestStatus = "completed" | "denied";
 
 export type CommandCategory =
   | "permits"
   | "execution"
+  | "security"
   | "explainability"
   | "accounting"
   | "sandbox";
@@ -114,9 +113,10 @@ export type CommandArtifact = {
 export type PermitReasonCode =
   | "policy_passed"
   | "model_not_allowed"
-  | "sandbox_budget_exceeded"
+  | "budget_exceeded"
   | "provider_not_available"
-  | "sandbox_request_limit_reached";
+  | "request_limit_reached"
+  | "firewall_blocked";
 
 export type PermitRecord = {
   id: string;
@@ -130,6 +130,8 @@ export type PermitRecord = {
   estimatedCostUsd: number;
   budgetBeforeUsd: number;
   budgetAfterUsd: number;
+  firewallRuleId: string | null;
+  firewallDetail: string | null;
   timestamp: string;
   lifecycle: GovernanceStageState[];
 };
@@ -152,6 +154,8 @@ export type RequestRecord = {
   actualCostUsd: number;
   budgetBeforeUsd: number;
   budgetAfterUsd: number;
+  firewallRuleId: string | null;
+  firewallDetail: string | null;
   traceId: string;
   timestamp: string;
   lifecycle: GovernanceStageState[];

@@ -4,15 +4,13 @@ import type { GovernanceStageState } from "@/lib/shell/types";
 
 const stageLabels: Record<GovernanceStageState["stage"], string> = {
   auth: "auth",
-  authorization: "authorization",
-  freshness: "freshness",
-  policy: "policy",
-  budget: "budget",
+  normalize: "normalize",
+  permit: "permit",
   firewall: "firewall",
   routing: "routing",
-  execution: "execution",
-  "terminal-accounting": "accounting",
-  audit: "audit",
+  dispatch: "dispatch",
+  reconcile: "reconcile",
+  emit: "emit",
 };
 
 function statusClasses(status: GovernanceStageState["status"]) {
