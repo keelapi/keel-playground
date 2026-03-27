@@ -160,6 +160,14 @@ export function GovernanceInspector({
             <StageTimeline stages={inspector.lifecycle} />
           </Section>
         ) : null}
+
+        {inspector.ungoverned ? (
+          <Section title="Ungoverned behavior">
+            <p className="text-[11px] leading-5 text-destructive/80">
+              {inspector.ungoverned}
+            </p>
+          </Section>
+        ) : null}
       </div>
     </aside>
   );

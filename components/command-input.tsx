@@ -37,9 +37,10 @@ export function CommandInput({
           type="button"
           onClick={onSubmit}
           disabled={isRunning}
-          className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label={isRunning ? "Running" : "Run command"}
+          className="font-mono text-[13px] text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isRunning ? "running" : "run"}
+          {isRunning ? "·" : "↵"}
         </button>
       </div>
     </div>

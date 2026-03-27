@@ -619,6 +619,7 @@ function createDecisionInspector(
   request: RequestRecord | null,
   permit: PermitRecord,
   command: string,
+  ungoverned?: string,
 ): GovernanceInspectorState {
   return {
     title,
@@ -649,6 +650,7 @@ function createDecisionInspector(
       { label: "project", value: "sandbox-demo" },
       { label: "input", value: request?.input ?? permit.input },
     ],
+    ungoverned,
     quickActions:
       request === null
         ? [{ label: "Copy command", command }]
@@ -733,6 +735,15 @@ function createExplainInspector(
       { label: "status", value: request.status },
       ...counterfactuals,
     ],
+    ungoverned: request.decision === "allow"
+      ? "Without governance, there is no cost tracking, no audit trail, and no budget enforcement."
+      : request.reasonCode === "firewall_blocked"
+        ? `Without governance, this prompt — including the detected content — is sent directly to the provider. The data leaves your infrastructure.`
+        : request.reasonCode === "model_not_allowed"
+          ? `Without governance, this request runs on ${request.model} unchecked with no policy gate.`
+          : request.reasonCode === "budget_exceeded"
+            ? "Without governance, this request executes and overshoots your intended budget."
+            : "Without governance, this request executes with no controls.",
     quickActions: [
       { label: "Replay timeline", command: `keel timeline ${request.id}` },
       { label: "Copy command", command },
@@ -875,11 +886,6 @@ function handlePermitCreate(session: SessionState, command: ShellCommand): Comma
     });
   }
 
-  rows.push({ label: "why", value: permit.why });
-  rows.push({
-    label: "without_keel",
-    value: withoutKeelMessage(evaluation, provider, model),
-  });
   rows.push({
     label: "learn_more",
     value: permit.reasonCode === "firewall_blocked"
@@ -902,6 +908,7 @@ function handlePermitCreate(session: SessionState, command: ShellCommand): Comma
         null,
         permit,
         command.raw,
+        withoutKeelMessage(evaluation, provider, model),
       ),
     },
   };
@@ -986,12 +993,6 @@ function handleExecute(session: SessionState, command: ShellCommand): CommandRun
     },
   );
 
-  rows.push({ label: "why", value: request.why });
-  rows.push({
-    label: "without_keel",
-    value: withoutKeelMessage(evaluation, provider, model),
-  });
-
   const executeLearnMore =
     request.reasonCode === "firewall_blocked"
       ? "https://docs.keelapi.com/security"
@@ -1017,6 +1018,7 @@ function handleExecute(session: SessionState, command: ShellCommand): CommandRun
         request,
         permit,
         command.raw,
+        withoutKeelMessage(evaluation, provider, model),
       ),
     },
   };
@@ -1196,16 +1198,14 @@ function handleUsage(session: SessionState, command: ShellCommand): CommandRunRe
   }
 
   rows.push({
-    label: "without_keel",
-    value:
-      denied > 0
-        ? `Without Keel, those ${denied} denied requests would have executed — adding $${formatUsd(deniedCostAvoided)} with no audit trail.`
-        : "Without Keel, you would have no record of spend or usage attribution.",
-  });
-  rows.push({
     label: "learn_more",
     value: "https://docs.keelapi.com/recipes/cost-controls",
   });
+
+  const usageUngoverned =
+    denied > 0
+      ? `Without governance, those ${denied} denied requests execute unchecked — adding $${formatUsd(deniedCostAvoided)} with no audit trail.`
+      : "Without governance, there is no record of spend or usage attribution.";
 
   return {
     session,
@@ -1214,7 +1214,10 @@ function handleUsage(session: SessionState, command: ShellCommand): CommandRunRe
       tone: "info",
       headline,
       rows,
-      inspector: createUsageInspector(command.raw, session),
+      inspector: {
+        ...createUsageInspector(command.raw, session),
+        ungoverned: usageUngoverned,
+      },
     },
   };
 }
