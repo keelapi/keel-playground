@@ -103,7 +103,7 @@ export function OutputPane({
       {entries.length === 0 ? (
         <div className="px-4 pb-5 pt-14 font-mono">
           <pre
-            className="mx-auto w-fit text-[9px] leading-[1.3] text-muted-foreground/25 select-none"
+            className="mx-auto w-fit bg-gradient-to-b from-blue-300 to-blue-600 bg-clip-text text-[9px] leading-[1.3] text-transparent select-none dark:from-blue-400 dark:to-blue-700"
             aria-hidden="true"
           >
             {KEEL_ASCII}

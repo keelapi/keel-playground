@@ -4,6 +4,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CommandInput } from "@/components/command-input";
+import { GovernanceInspector } from "@/components/governance-inspector";
 import { OutputPane } from "@/components/output-pane";
 import { ScenarioSidebar } from "@/components/scenario-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -346,49 +347,75 @@ export function WorkbenchShell() {
             />
           </div>
 
-          <div
-            className="flex flex-col overflow-hidden rounded-2xl"
-            style={{
-              border: "1px solid hsl(var(--snippet-border))",
-              background: "hsl(var(--snippet-chrome))",
-              boxShadow: "var(--snippet-shadow)",
-            }}
-          >
+          <div className="flex flex-col gap-4">
             <div
-              className="flex items-center gap-2 px-4 py-3"
-              style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+              className="flex flex-col overflow-hidden rounded-2xl"
+              style={{
+                border: "1px solid hsl(var(--snippet-border))",
+                background: "hsl(var(--snippet-chrome))",
+                boxShadow: "var(--snippet-shadow)",
+              }}
             >
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+              <div
+                className="flex items-center gap-2 px-4 py-3"
+                style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+              </div>
+
+              <div
+                className="flex h-[480px] min-h-0 flex-col"
+                style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
+              >
+                <OutputPane
+                  entries={entries}
+                  selectedEntryId={selectedEntry?.id ?? null}
+                  pendingCommand={pendingCommand}
+                  copiedCommand={copiedCommand}
+                  onSelectEntry={setSelectedEntryId}
+                  onCopyCommand={(command) => void handleCopyCommand(command)}
+                  onPrefillCommand={handlePrefillCommand}
+                  starterCommands={starterCommands}
+                  scrollRef={outputScrollRef}
+                />
+
+                <CommandInput
+                  value={commandInput}
+                  isRunning={isRunning}
+                  onChange={setCommandInput}
+                  onSubmit={() => runCommand(commandInput)}
+                  onKeyDown={handleInputKeyDown}
+                  inputRef={inputRef}
+                />
+              </div>
             </div>
 
-            <div
-              className="flex h-[480px] min-h-0 flex-col"
-              style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
-            >
-              <OutputPane
-                entries={entries}
-                selectedEntryId={selectedEntry?.id ?? null}
-                pendingCommand={pendingCommand}
-                copiedCommand={copiedCommand}
-                onSelectEntry={setSelectedEntryId}
-                onCopyCommand={(command) => void handleCopyCommand(command)}
-                onPrefillCommand={handlePrefillCommand}
-                starterCommands={starterCommands}
-                scrollRef={outputScrollRef}
-              />
-
-              <CommandInput
-                value={commandInput}
-                isRunning={isRunning}
-                onChange={setCommandInput}
-                onSubmit={() => runCommand(commandInput)}
-                onKeyDown={handleInputKeyDown}
-                inputRef={inputRef}
-              />
-            </div>
-
+            {selectedEntry?.artifact.inspector ? (
+              <div
+                className="overflow-hidden rounded-2xl"
+                style={{
+                  border: "1px solid hsl(var(--snippet-border))",
+                  background: "hsl(var(--snippet-chrome))",
+                  boxShadow: "var(--snippet-shadow)",
+                }}
+              >
+                <div className="max-h-[420px] overflow-y-auto" style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}>
+                  <GovernanceInspector
+                    inspector={selectedEntry.artifact.inspector}
+                    onQuickAction={(command, label) => {
+                      if (label === "Copy command") {
+                        void handleCopyCommand(command);
+                      } else {
+                        handlePrefillCommand(command);
+                      }
+                    }}
+                    copiedCommand={copiedCommand}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
