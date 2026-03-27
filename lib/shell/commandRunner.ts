@@ -619,6 +619,7 @@ function createDecisionInspector(
   request: RequestRecord | null,
   permit: PermitRecord,
   command: string,
+  ungoverned?: string,
 ): GovernanceInspectorState {
   return {
     title,
@@ -649,6 +650,7 @@ function createDecisionInspector(
       { label: "project", value: "sandbox-demo" },
       { label: "input", value: request?.input ?? permit.input },
     ],
+    ungoverned,
     quickActions:
       request === null
         ? [{ label: "Copy command", command }]
@@ -733,6 +735,15 @@ function createExplainInspector(
       { label: "status", value: request.status },
       ...counterfactuals,
     ],
+    ungoverned: request.decision === "allow"
+      ? "Without governance, there is no cost tracking, no audit trail, and no budget enforcement."
+      : request.reasonCode === "firewall_blocked"
+        ? `Without governance, this prompt — including the detected content — is sent directly to the provider. The data leaves your infrastructure.`
+        : request.reasonCode === "model_not_allowed"
+          ? `Without governance, this request runs on ${request.model} unchecked with no policy gate.`
+          : request.reasonCode === "budget_exceeded"
+            ? "Without governance, this request executes and overshoots your intended budget."
+            : "Without governance, this request executes with no controls.",
     quickActions: [
       { label: "Replay timeline", command: `keel timeline ${request.id}` },
       { label: "Copy command", command },
@@ -875,17 +886,9 @@ function handlePermitCreate(session: SessionState, command: ShellCommand): Comma
     });
   }
 
-  rows.push({ label: "why", value: permit.why });
-  rows.push({
-    label: "without_keel",
-    value: withoutKeelMessage(evaluation, provider, model),
-  });
-  rows.push({
-    label: "learn_more",
-    value: permit.reasonCode === "firewall_blocked"
-      ? "https://docs.keelapi.com/security"
-      : "https://docs.keelapi.com/permits",
-  });
+  const permitLearnMore = permit.reasonCode === "firewall_blocked"
+    ? "https://docs.keelapi.com/security"
+    : "https://docs.keelapi.com/permits";
 
   return {
     session,
@@ -894,15 +897,19 @@ function handlePermitCreate(session: SessionState, command: ShellCommand): Comma
       tone: permit.decision === "allow" ? "success" : "denied",
       headline,
       rows,
-      inspector: createDecisionInspector(
-        "Permit decision",
-        isAllow
-          ? "Budget reserved but not spent — execution requires a separate dispatch."
-          : `Denied at ${permit.reasonCode === "firewall_blocked" ? "firewall" : "permit"} stage.`,
-        null,
-        permit,
-        command.raw,
-      ),
+      inspector: {
+        ...createDecisionInspector(
+          "Permit decision",
+          isAllow
+            ? "Budget reserved but not spent — execution requires a separate dispatch."
+            : `Denied at ${permit.reasonCode === "firewall_blocked" ? "firewall" : "permit"} stage.`,
+          null,
+          permit,
+          command.raw,
+          withoutKeelMessage(evaluation, provider, model),
+        ),
+        learnMoreUrl: permitLearnMore,
+      },
     },
   };
 }
@@ -986,12 +993,6 @@ function handleExecute(session: SessionState, command: ShellCommand): CommandRun
     },
   );
 
-  rows.push({ label: "why", value: request.why });
-  rows.push({
-    label: "without_keel",
-    value: withoutKeelMessage(evaluation, provider, model),
-  });
-
   const executeLearnMore =
     request.reasonCode === "firewall_blocked"
       ? "https://docs.keelapi.com/security"
@@ -1000,7 +1001,6 @@ function handleExecute(session: SessionState, command: ShellCommand): CommandRun
         : request.reasonCode === "budget_exceeded"
           ? "https://docs.keelapi.com/recipes/cost-controls"
           : "https://docs.keelapi.com/executions";
-  rows.push({ label: "learn_more", value: executeLearnMore });
 
   return {
     session,
@@ -1009,15 +1009,19 @@ function handleExecute(session: SessionState, command: ShellCommand): CommandRun
       tone: isAllow ? "success" : "denied",
       headline,
       rows,
-      inspector: createDecisionInspector(
-        "Governed execution",
-        isAllow
-          ? "Permit, route, dispatch, reconcile — full governance spine."
-          : `Stopped at ${request.reasonCode === "firewall_blocked" ? "firewall" : "permit"} stage.`,
-        request,
-        permit,
-        command.raw,
-      ),
+      inspector: {
+        ...createDecisionInspector(
+          "Governed execution",
+          isAllow
+            ? "Permit, route, dispatch, reconcile — full governance spine."
+            : `Stopped at ${request.reasonCode === "firewall_blocked" ? "firewall" : "permit"} stage.`,
+          request,
+          permit,
+          command.raw,
+          withoutKeelMessage(evaluation, provider, model),
+        ),
+        learnMoreUrl: executeLearnMore,
+      },
     },
   };
 }
@@ -1092,11 +1096,6 @@ function handleExplain(session: SessionState, command: ShellCommand): CommandRun
     }
   }
 
-  rows.push({
-    label: "learn_more",
-    value: "https://docs.keelapi.com/execution-spine",
-  });
-
   return {
     session,
     artifact: {
@@ -1104,7 +1103,10 @@ function handleExplain(session: SessionState, command: ShellCommand): CommandRun
       tone: request.decision === "allow" ? "info" : "denied",
       headline,
       rows,
-      inspector: createExplainInspector(request, command.raw, session),
+      inspector: {
+        ...createExplainInspector(request, command.raw, session),
+        learnMoreUrl: "https://docs.keelapi.com/execution-spine",
+      },
     },
   };
 }
@@ -1142,12 +1144,11 @@ function handleTimeline(session: SessionState, command: ShellCommand): CommandRu
             (stage) => `${stage.stage}: ${stage.status} — ${stage.detail}`,
           ),
         },
-        {
-          label: "learn_more",
-          value: "https://docs.keelapi.com/execution-spine",
-        },
       ],
-      inspector: createTimelineInspector(request, command.raw),
+      inspector: {
+        ...createTimelineInspector(request, command.raw),
+        learnMoreUrl: "https://docs.keelapi.com/execution-spine",
+      },
     },
   };
 }
@@ -1195,17 +1196,10 @@ function handleUsage(session: SessionState, command: ShellCommand): CommandRunRe
     });
   }
 
-  rows.push({
-    label: "without_keel",
-    value:
-      denied > 0
-        ? `Without Keel, those ${denied} denied requests would have executed — adding $${formatUsd(deniedCostAvoided)} with no audit trail.`
-        : "Without Keel, you would have no record of spend or usage attribution.",
-  });
-  rows.push({
-    label: "learn_more",
-    value: "https://docs.keelapi.com/recipes/cost-controls",
-  });
+  const usageUngoverned =
+    denied > 0
+      ? `Without governance, those ${denied} denied requests execute unchecked — adding $${formatUsd(deniedCostAvoided)} with no audit trail.`
+      : "Without governance, there is no record of spend or usage attribution.";
 
   return {
     session,
@@ -1214,7 +1208,11 @@ function handleUsage(session: SessionState, command: ShellCommand): CommandRunRe
       tone: "info",
       headline,
       rows,
-      inspector: createUsageInspector(command.raw, session),
+      inspector: {
+        ...createUsageInspector(command.raw, session),
+        ungoverned: usageUngoverned,
+        learnMoreUrl: "https://docs.keelapi.com/recipes/cost-controls",
+      },
     },
   };
 }

@@ -4,22 +4,44 @@ import type { KeyboardEvent, RefObject } from "react";
 
 import type { WorkbenchEntry } from "@/lib/shell/types";
 
-const KEEL_ASCII = ` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  +++++++++++++++++++++++++++
-    +++++++++++++++++++++++++
-    +++++++++++++++++++++++++
-     ++++++++++++++++++++++++
-      ++++++++++++++++++++++
-      ++++++++++++++++++++++
-      xxxxxxxxxxxxxxxxxxxxxx
-       xxxxxxxxxxxxxxxxxxxxx
-       xxxxxxxxxxxxxxxxxxxx
-       xxxxxxxxxxxxxxxxxxxx
-       xxxxxxxxxxxxxxxxxxxx
-        xxxxxxxxxxxxxxxxxxx
-        xxxxxxxxxxxxxxxxxx
-        XXXXXXXXXXXXXXXXXX
-        XXXXXXXXXXXXXXXXXX`;
+const KEEL_ASCII_LINES = [
+  ` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;`,
+  `  +++++++++++++++++++++++++++`,
+  `    +++++++++++++++++++++++++`,
+  `    +++++++++++++++++++++++++`,
+  `     ++++++++++++++++++++++++`,
+  `      ++++++++++++++++++++++`,
+  `      ++++++++++++++++++++++`,
+  `      xxxxxxxxxxxxxxxxxxxxxx`,
+  `       xxxxxxxxxxxxxxxxxxxxx`,
+  `       xxxxxxxxxxxxxxxxxxxx`,
+  `       xxxxxxxxxxxxxxxxxxxx`,
+  `       xxxxxxxxxxxxxxxxxxxx`,
+  `        xxxxxxxxxxxxxxxxxxx`,
+  `        xxxxxxxxxxxxxxxxxx`,
+  `        XXXXXXXXXXXXXXXXXX`,
+  `        XXXXXXXXXXXXXXXXXX`,
+];
+
+// Dark blue at top → light blue at bottom
+const KEEL_ASCII_COLORS = [
+  "hsl(217 80% 35%)", // row 0 — darkest
+  "hsl(217 80% 38%)", // row 1 — dark
+  "hsl(217 75% 42%)",
+  "hsl(217 75% 46%)",
+  "hsl(217 70% 50%)",
+  "hsl(215 70% 54%)",
+  "hsl(215 65% 58%)",
+  "hsl(215 65% 61%)",
+  "hsl(213 60% 64%)",
+  "hsl(213 60% 67%)",
+  "hsl(213 55% 70%)",
+  "hsl(211 55% 73%)",
+  "hsl(211 50% 76%)",
+  "hsl(211 50% 79%)",
+  "hsl(210 50% 82%)",
+  "hsl(210 45% 85%)", // row 15 — lightest
+];
 
 type OutputPaneProps = {
   entries: WorkbenchEntry[];
@@ -58,8 +80,6 @@ function renderValue(value: WorkbenchEntry["artifact"]["rows"][number]["value"])
           <a
             key={i}
             href={s.trim()}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:decoration-primary"
           >
             {s.trim()}
@@ -75,8 +95,6 @@ function renderValue(value: WorkbenchEntry["artifact"]["rows"][number]["value"])
     return (
       <a
         href={s.trim()}
-        target="_blank"
-        rel="noopener noreferrer"
         className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:decoration-primary"
       >
         {s.trim()}
@@ -103,10 +121,14 @@ export function OutputPane({
       {entries.length === 0 ? (
         <div className="px-4 pb-5 pt-14 font-mono">
           <pre
-            className="mx-auto w-fit text-[9px] leading-[1.3] text-muted-foreground/25 select-none"
+            className="mx-auto w-fit text-[9px] leading-[1.3] select-none"
             aria-hidden="true"
           >
-            {KEEL_ASCII}
+            {KEEL_ASCII_LINES.map((line, i) => (
+              <span key={i} style={{ color: KEEL_ASCII_COLORS[i] }} className="block">
+                {line}
+              </span>
+            ))}
           </pre>
           <p className="mt-4 text-[12px] text-foreground">Welcome to Keel Shell!</p>
           <p className="mt-1 text-[11px] leading-5 text-muted-foreground">

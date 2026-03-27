@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Keel Workbench",
+  title: "Keel Play",
   description:
     "Explore permit-driven AI execution governance with deterministic command output, lifecycle replay, and accounting.",
   icons: {

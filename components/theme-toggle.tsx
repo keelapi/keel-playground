@@ -71,7 +71,7 @@ export function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label="Toggle theme"
-      className="inline-flex h-6 w-6 items-center justify-center border border-border/80 bg-transparent text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+      className="inline-flex h-6 w-6 items-center justify-center bg-transparent text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground"
     >
       {isDark ? <SunIcon /> : <MoonIcon />}
     </button>

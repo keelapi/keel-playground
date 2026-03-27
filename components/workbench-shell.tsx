@@ -4,6 +4,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CommandInput } from "@/components/command-input";
+import { GovernanceInspector } from "@/components/governance-inspector";
 import { OutputPane } from "@/components/output-pane";
 import { ScenarioSidebar } from "@/components/scenario-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -318,8 +319,6 @@ export function WorkbenchShell() {
           <div className="site-header__actions">
             <a
               href="https://docs.keelapi.com/quickstart"
-              target="_blank"
-              rel="noreferrer"
               className="header-link"
             >
               Quickstart
@@ -343,72 +342,99 @@ export function WorkbenchShell() {
               scenarios={SCENARIO_LIBRARY}
               activeScenarioId={activeScenarioId}
               onSelectScenario={handleSelectScenario}
+              session={session}
             />
           </div>
 
-          <div
-            className="flex flex-col overflow-hidden rounded-2xl"
-            style={{
-              border: "1px solid hsl(var(--snippet-border))",
-              background: "hsl(var(--snippet-chrome))",
-              boxShadow: "var(--snippet-shadow)",
-            }}
-          >
+          <div className="flex flex-col gap-4">
             <div
-              className="flex items-center gap-2 px-4 py-3"
-              style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+              className="flex flex-col overflow-hidden rounded-2xl"
+              style={{
+                border: "1px solid hsl(var(--snippet-border))",
+                background: "hsl(var(--snippet-chrome))",
+                boxShadow: "var(--snippet-shadow)",
+              }}
             >
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                  keel shell
+                </span>
+              </div>
+
+              <div
+                className="flex h-[480px] min-h-0 flex-col"
+                style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
+              >
+                <OutputPane
+                  entries={entries}
+                  selectedEntryId={selectedEntry?.id ?? null}
+                  pendingCommand={pendingCommand}
+                  copiedCommand={copiedCommand}
+                  onSelectEntry={setSelectedEntryId}
+                  onCopyCommand={(command) => void handleCopyCommand(command)}
+                  onPrefillCommand={handlePrefillCommand}
+                  starterCommands={starterCommands}
+                  scrollRef={outputScrollRef}
+                />
+
+                <CommandInput
+                  value={commandInput}
+                  isRunning={isRunning}
+                  onChange={setCommandInput}
+                  onSubmit={() => runCommand(commandInput)}
+                  onKeyDown={handleInputKeyDown}
+                  inputRef={inputRef}
+                />
+              </div>
             </div>
 
             <div
-              className="flex h-[480px] min-h-0 flex-col"
-              style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
+              className="overflow-hidden rounded-2xl"
+              style={{
+                border: "1px solid hsl(var(--snippet-border))",
+                background: "hsl(var(--snippet-chrome))",
+                boxShadow: "var(--snippet-shadow)",
+              }}
             >
-              <OutputPane
-                entries={entries}
-                selectedEntryId={selectedEntry?.id ?? null}
-                pendingCommand={pendingCommand}
-                copiedCommand={copiedCommand}
-                onSelectEntry={setSelectedEntryId}
-                onCopyCommand={(command) => void handleCopyCommand(command)}
-                onPrefillCommand={handlePrefillCommand}
-                starterCommands={starterCommands}
-                scrollRef={outputScrollRef}
-              />
-
-              <CommandInput
-                value={commandInput}
-                isRunning={isRunning}
-                onChange={setCommandInput}
-                onSubmit={() => runCommand(commandInput)}
-                onKeyDown={handleInputKeyDown}
-                inputRef={inputRef}
-              />
+              <div
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                  governance inspector
+                </span>
+              </div>
+              <div
+                className={selectedEntry?.artifact.inspector ? "max-h-[420px] overflow-y-auto" : ""}
+                style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
+              >
+                <GovernanceInspector
+                  inspector={selectedEntry?.artifact.inspector ?? null}
+                  onQuickAction={(command, label) => {
+                    if (label === "Copy command") {
+                      void handleCopyCommand(command);
+                    } else {
+                      handlePrefillCommand(command);
+                    }
+                  }}
+                  copiedCommand={copiedCommand}
+                />
+              </div>
             </div>
-
           </div>
-        </div>
-
-        <div className="mt-6 flex items-center justify-between">
-          <a
-            href="https://docs.keelapi.com/quickstart"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            Quickstart guide →
-          </a>
-          <a
-            href="https://docs.keelapi.com/api-reference"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            API reference →
-          </a>
         </div>
       </main>
     </div>
