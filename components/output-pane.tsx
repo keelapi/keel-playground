@@ -103,7 +103,10 @@ export function OutputPane({
       {entries.length === 0 ? (
         <div className="px-4 pb-5 pt-14 font-mono">
           <pre
-            className="mx-auto w-fit bg-gradient-to-b from-blue-300 to-blue-600 bg-clip-text text-[9px] leading-[1.3] text-transparent select-none dark:from-blue-400 dark:to-blue-700"
+            className="mx-auto w-fit bg-clip-text text-[9px] leading-[1.3] text-transparent select-none"
+            style={{
+              backgroundImage: "linear-gradient(to bottom, #1e40af 0%, #3b82f6 15%, #93c5fd 50%, #2563eb 85%, #1e3a8a 100%)",
+            }}
             aria-hidden="true"
           >
             {KEEL_ASCII}

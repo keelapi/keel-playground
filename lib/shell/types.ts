@@ -100,6 +100,7 @@ export type GovernanceInspectorState = {
   traceId?: string;
   summaryRows?: TerminalRow[];
   ungoverned?: string;
+  learnMoreUrl?: string;
   quickActions: CommandQuickAction[];
 };
 

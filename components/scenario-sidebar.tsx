@@ -1,11 +1,13 @@
 "use client";
 
-import type { WorkbenchScenario } from "@/lib/shell/types";
+import { formatUsd } from "@/lib/shell/sessionState";
+import type { SessionState, WorkbenchScenario } from "@/lib/shell/types";
 
 type ScenarioSidebarProps = {
   scenarios: readonly WorkbenchScenario[];
   activeScenarioId: string | null;
   onSelectScenario: (scenarioId: string) => void;
+  session: SessionState;
 };
 
 const categoryLabels: Record<WorkbenchScenario["category"], string> = {
@@ -21,6 +23,7 @@ export function ScenarioSidebar({
   scenarios,
   activeScenarioId,
   onSelectScenario,
+  session,
 }: ScenarioSidebarProps) {
   const groupedScenarios = scenarios.reduce<Record<string, WorkbenchScenario[]>>(
     (groups, scenario) => {
@@ -28,6 +31,10 @@ export function ScenarioSidebar({
       return groups;
     },
     {},
+  );
+
+  const budgetPct = Math.round(
+    (1 - session.budgetUsdRemaining / session.budgetUsdTotal) * 100,
   );
 
   return (
@@ -61,6 +68,77 @@ export function ScenarioSidebar({
           })}
         </div>
       ))}
+
+      <div className="mt-6 border-t border-border/50 px-4 pt-4">
+        <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+          Session
+        </div>
+        <dl className="space-y-1.5">
+          <div className="flex justify-between">
+            <dt className="font-mono text-[11px] text-muted-foreground">budget</dt>
+            <dd className="font-mono text-[11px] text-foreground">
+              ${formatUsd(session.budgetUsdRemaining)}
+              <span className="ml-1 text-muted-foreground/60">{budgetPct}%</span>
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="font-mono text-[11px] text-muted-foreground">requests</dt>
+            <dd className="font-mono text-[11px] text-foreground">{session.requestsRemaining} left</dd>
+          </div>
+          {session.usage.deniedRequests > 0 ? (
+            <div className="flex justify-between">
+              <dt className="font-mono text-[11px] text-muted-foreground">denied</dt>
+              <dd className="font-mono text-[11px] text-destructive">{session.usage.deniedRequests}</dd>
+            </div>
+          ) : null}
+          {session.usage.completedRequests > 0 ? (
+            <div className="flex justify-between">
+              <dt className="font-mono text-[11px] text-muted-foreground">spend</dt>
+              <dd className="font-mono text-[11px] text-foreground">${formatUsd(session.usage.totalActualCostUsd)}</dd>
+            </div>
+          ) : null}
+        </dl>
+      </div>
+
+      <div className="mt-4 border-t border-border/50 px-4 pt-4">
+        <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+          Docs
+        </div>
+        <div className="space-y-1">
+          <a
+            href="https://docs.keelapi.com/quickstart"
+            target="_blank"
+            rel="noreferrer"
+            className="block font-mono text-[11px] text-muted-foreground transition hover:text-foreground"
+          >
+            Quickstart →
+          </a>
+          <a
+            href="https://docs.keelapi.com/permits"
+            target="_blank"
+            rel="noreferrer"
+            className="block font-mono text-[11px] text-muted-foreground transition hover:text-foreground"
+          >
+            Permits →
+          </a>
+          <a
+            href="https://docs.keelapi.com/security"
+            target="_blank"
+            rel="noreferrer"
+            className="block font-mono text-[11px] text-muted-foreground transition hover:text-foreground"
+          >
+            Security →
+          </a>
+          <a
+            href="https://docs.keelapi.com/api-reference"
+            target="_blank"
+            rel="noreferrer"
+            className="block font-mono text-[11px] text-muted-foreground transition hover:text-foreground"
+          >
+            API Reference →
+          </a>
+        </div>
+      </div>
     </nav>
   );
 }

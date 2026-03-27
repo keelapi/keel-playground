@@ -344,6 +344,7 @@ export function WorkbenchShell() {
               scenarios={SCENARIO_LIBRARY}
               activeScenarioId={activeScenarioId}
               onSelectScenario={handleSelectScenario}
+              session={session}
             />
           </div>
 
@@ -357,12 +358,17 @@ export function WorkbenchShell() {
               }}
             >
               <div
-                className="flex items-center gap-2 px-4 py-3"
+                className="flex items-center justify-between px-4 py-3"
                 style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
               >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                  keel shell
+                </span>
               </div>
 
               <div
@@ -401,6 +407,19 @@ export function WorkbenchShell() {
                   boxShadow: "var(--snippet-shadow)",
                 }}
               >
+                <div
+                  className="flex items-center justify-between px-4 py-3"
+                  style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
+                  </div>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                    governance inspector
+                  </span>
+                </div>
                 <div className="max-h-[420px] overflow-y-auto" style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}>
                   <GovernanceInspector
                     inspector={selectedEntry.artifact.inspector}
