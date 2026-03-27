@@ -24,6 +24,16 @@ import type {
   TerminalRow,
 } from "@/lib/shell/types";
 
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+type FirewallResult = {
+  blocked: boolean;
+  ruleId: string | null;
+  detail: string | null;
+};
+
 type Evaluation = {
   decision: PermitDecision;
   reasonCode: PermitReasonCode;
@@ -31,6 +41,8 @@ type Evaluation = {
   inputTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
+  firewallRuleId: string | null;
+  firewallDetail: string | null;
 };
 
 type LifecycleMode = "permit" | "execution";
@@ -47,7 +59,13 @@ type LifecycleParams = {
   actualCostUsd: number;
   budgetBeforeUsd: number;
   budgetAfterUsd: number;
+  firewallRuleId: string | null;
+  firewallDetail: string | null;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
 
 function requireFlag(command: ShellCommand, flag: string): string {
   const value = command.flags[flag];
@@ -57,6 +75,10 @@ function requireFlag(command: ShellCommand, flag: string): string {
   }
 
   return value.trim();
+}
+
+function toMicros(usd: number): number {
+  return Math.round(usd * 1_000_000);
 }
 
 function computeInputTokens(input: string): number {
@@ -99,6 +121,80 @@ function getModelPricing(model: string): number {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Firewall                                                           */
+/* ------------------------------------------------------------------ */
+
+function evaluateFirewall(input: string): FirewallResult {
+  // API key patterns (OpenAI, Anthropic, generic)
+  if (/sk-[a-zA-Z0-9_-]{10,}/.test(input)) {
+    return {
+      blocked: true,
+      ruleId: "api_key_detected",
+      detail: "API key pattern (sk-...) detected in prompt content.",
+    };
+  }
+
+  // Prompt injection patterns
+  if (
+    /ignore\s+(all\s+)?previous\s+instructions/i.test(input) ||
+    /disregard\s+(all\s+)?(prior|previous|your)/i.test(input) ||
+    /forget\s+(all\s+)?(your|previous)/i.test(input)
+  ) {
+    return {
+      blocked: true,
+      ruleId: "prompt_injection_detected",
+      detail: "Prompt injection attempt detected — instruction override pattern.",
+    };
+  }
+
+  // System prompt exfiltration
+  if (
+    /output\s+(the|your)\s+system\s+prompt/i.test(input) ||
+    /reveal\s+(your|the)\s+(system|hidden)/i.test(input) ||
+    /print\s+(your|the)\s+system/i.test(input)
+  ) {
+    return {
+      blocked: true,
+      ruleId: "system_prompt_exfiltration",
+      detail: "System prompt exfiltration attempt detected.",
+    };
+  }
+
+  // SSN pattern
+  if (/\b\d{3}-\d{2}-\d{4}\b/.test(input)) {
+    return {
+      blocked: true,
+      ruleId: "ssn_pattern_detected",
+      detail: "Social Security Number pattern detected in prompt content.",
+    };
+  }
+
+  // Credit card pattern
+  if (/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/.test(input)) {
+    return {
+      blocked: true,
+      ruleId: "credit_card_detected",
+      detail: "Credit card number pattern detected in prompt content.",
+    };
+  }
+
+  // Private key block
+  if (/-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----/.test(input)) {
+    return {
+      blocked: true,
+      ruleId: "private_key_detected",
+      detail: "Private key block detected in prompt content.",
+    };
+  }
+
+  return { blocked: false, ruleId: null, detail: null };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Evaluation                                                         */
+/* ------------------------------------------------------------------ */
+
 function evaluateRequest(
   session: SessionState,
   provider: string,
@@ -114,14 +210,16 @@ function evaluateRequest(
   if (session.requestsRemaining <= 0) {
     return {
       decision: "deny",
-      reasonCode: "sandbox_request_limit_reached",
+      reasonCode: "request_limit_reached",
       why: [
-        "The deterministic sandbox has exhausted its governed execution allowance.",
-        "Reset the sandbox to restore the fixed request budget.",
+        "Sandbox execution allowance exhausted.",
+        "Reset the sandbox to restore the request budget.",
       ],
       inputTokens,
       outputTokens,
       estimatedCostUsd,
+      firewallRuleId: null,
+      firewallDetail: null,
     };
   }
 
@@ -130,26 +228,30 @@ function evaluateRequest(
       decision: "deny",
       reasonCode: "model_not_allowed",
       why: [
-        `${model} is outside the allowed model set for policy ${session.policy}.`,
-        "Keel denies the request before provider dispatch when model policy fails.",
+        `${model} is not in the allowed model set for policy ${session.policy}.`,
+        `Keel denied the request before provider dispatch — $0.00 spent.`,
       ],
       inputTokens,
       outputTokens,
       estimatedCostUsd,
+      firewallRuleId: null,
+      firewallDetail: null,
     };
   }
 
   if (estimatedCostUsd >= session.budgetUsdRemaining) {
     return {
       decision: "deny",
-      reasonCode: "sandbox_budget_exceeded",
+      reasonCode: "budget_exceeded",
       why: [
-        `Estimated cost $${formatUsd(estimatedCostUsd)} exceeds the remaining sandbox budget.`,
-        "The deny happens inside Keel before any execution path is opened.",
+        `Estimated cost $${formatUsd(estimatedCostUsd)} exceeds remaining budget of $${formatUsd(session.budgetUsdRemaining)}.`,
+        "Keel denied the request before any provider call was made.",
       ],
       inputTokens,
       outputTokens,
       estimatedCostUsd,
+      firewallRuleId: null,
+      firewallDetail: null,
     };
   }
 
@@ -158,12 +260,34 @@ function evaluateRequest(
       decision: "deny",
       reasonCode: "provider_not_available",
       why: [
-        `${provider} is not enabled in this deterministic sandbox.`,
-        "Routing cannot resolve an eligible upstream provider, so execution is denied.",
+        `${provider} is not enabled for this project.`,
+        "Routing could not resolve an eligible upstream provider.",
       ],
       inputTokens,
       outputTokens,
       estimatedCostUsd,
+      firewallRuleId: null,
+      firewallDetail: null,
+    };
+  }
+
+  // Firewall — runs after policy/budget pass, before dispatch
+  const firewall = evaluateFirewall(input);
+
+  if (firewall.blocked) {
+    return {
+      decision: "deny",
+      reasonCode: "firewall_blocked",
+      why: [
+        firewall.detail ?? "Firewall rule triggered.",
+        "Keel blocked this request before it reached the provider.",
+        "The content never left your infrastructure.",
+      ],
+      inputTokens,
+      outputTokens,
+      estimatedCostUsd,
+      firewallRuleId: firewall.ruleId,
+      firewallDetail: firewall.detail,
     };
   }
 
@@ -171,15 +295,22 @@ function evaluateRequest(
     decision: "allow",
     reasonCode: "policy_passed",
     why: [
-      `Model ${model} is allowed by policy ${session.policy}.`,
-      `Estimated cost $${formatUsd(estimatedCostUsd)} fits inside the remaining sandbox budget.`,
-      `Provider ${provider} resolves to an approved route in the sandbox.`,
+      `Policy ${session.policy} matched — model ${model} is allowed.`,
+      `Estimated cost $${formatUsd(estimatedCostUsd)} fits within remaining budget of $${formatUsd(session.budgetUsdRemaining)}.`,
+      `Firewall passed — no sensitive patterns detected.`,
+      `Route resolved: ${provider} / ${model}.`,
     ],
     inputTokens,
     outputTokens,
     estimatedCostUsd,
+    firewallRuleId: null,
+    firewallDetail: null,
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Lifecycle (8 real stages)                                          */
+/* ------------------------------------------------------------------ */
 
 function createLifecycle(
   session: SessionState,
@@ -201,102 +332,118 @@ function createLifecycle(
     });
   }
 
-  const isRequestLimit = params.reasonCode === "sandbox_request_limit_reached";
+  const isLimitDenied = params.reasonCode === "request_limit_reached";
   const isPolicyDenied = params.reasonCode === "model_not_allowed";
-  const isBudgetDenied = params.reasonCode === "sandbox_budget_exceeded";
+  const isBudgetDenied = params.reasonCode === "budget_exceeded";
+  const isFirewallBlocked = params.reasonCode === "firewall_blocked";
   const isRoutingDenied = params.reasonCode === "provider_not_available";
+  const permitDenied = isLimitDenied || isPolicyDenied || isBudgetDenied;
+  const anyDenied = permitDenied || isFirewallBlocked || isRoutingDenied;
 
-  push("auth", "completed", "Sandbox identity was accepted for the local workbench session.");
+  // 1. auth
   push(
-    "authorization",
-    isRequestLimit ? "blocked" : "completed",
-    isRequestLimit
-      ? "Sandbox execution allowance is exhausted for this deterministic session."
-      : "Actor is authorized to request governed execution in sandbox-demo.",
+    "auth",
+    "completed",
+    "API key validated, project sandbox-demo resolved.",
   );
+
+  // 2. normalize
   push(
-    "freshness",
-    isRequestLimit ? "skipped" : "completed",
-    isRequestLimit
-      ? "Freshness checks were skipped after authorization failed."
-      : "Request input falls within the deterministic freshness window.",
+    "normalize",
+    isLimitDenied ? "skipped" : "completed",
+    isLimitDenied
+      ? "Skipped — request limit reached before evaluation."
+      : "Payload parsed, token count estimated, operation resolved.",
   );
+
+  // 3. permit (policy + budget combined)
   push(
-    "policy",
-    isRequestLimit ? "skipped" : isPolicyDenied ? "blocked" : "completed",
-    isRequestLimit
-      ? "Policy evaluation did not run because authorization was blocked."
+    "permit",
+    permitDenied ? "blocked" : "completed",
+    isLimitDenied
+      ? "Request limit reached — permit denied."
       : isPolicyDenied
-        ? `${params.model} is outside the allowed model profile for ${params.matchedPolicy}.`
-        : `Matched policy ${params.matchedPolicy}.`,
+        ? `${params.model} is not in the allowed model set for policy ${params.matchedPolicy}.`
+        : isBudgetDenied
+          ? `Estimated cost $${formatUsd(params.estimatedCostUsd)} exceeds remaining budget $${formatUsd(params.budgetBeforeUsd)}.`
+          : `Policy ${params.matchedPolicy} matched. Budget reservation of $${formatUsd(params.estimatedCostUsd)} placed.`,
   );
-  push(
-    "budget",
-    isRequestLimit || isPolicyDenied
-      ? "skipped"
-      : isBudgetDenied
-        ? "blocked"
-        : "completed",
-    isRequestLimit || isPolicyDenied
-      ? "Budget evaluation was skipped because an earlier stage denied the request."
-      : isBudgetDenied
-        ? `Estimated cost $${formatUsd(params.estimatedCostUsd)} exceeded the remaining budget of $${formatUsd(params.budgetBeforeUsd)}.`
-        : `Estimated cost $${formatUsd(params.estimatedCostUsd)} fits within the remaining budget of $${formatUsd(params.budgetBeforeUsd)}.`,
-  );
+
+  // 4. firewall
   push(
     "firewall",
-    isRequestLimit || isPolicyDenied || isBudgetDenied ? "skipped" : "completed",
-    isRequestLimit || isPolicyDenied || isBudgetDenied
-      ? "Sandbox firewall checks were skipped because execution was already denied."
-      : "Request shape passed the sandbox firewall and deterministic safety gates.",
+    permitDenied
+      ? "skipped"
+      : isFirewallBlocked
+        ? "blocked"
+        : "completed",
+    permitDenied
+      ? "Skipped — request already denied at permit stage."
+      : isFirewallBlocked
+        ? `${params.firewallDetail ?? "Firewall rule triggered."} Rule: ${params.firewallRuleId ?? "unknown"}.`
+        : "Content inspection passed — no sensitive patterns detected.",
   );
+
+  // 5. routing
   push(
     "routing",
     params.mode === "permit"
       ? "skipped"
-      : isRoutingDenied
-        ? "blocked"
-        : params.decision === "allow"
-          ? "completed"
-          : "skipped",
+      : anyDenied
+        ? "skipped"
+        : isRoutingDenied
+          ? "blocked"
+          : "completed",
     params.mode === "permit"
-      ? "Routing stays deferred until an explicit governed execution command is issued."
-      : isRoutingDenied
-        ? `No eligible route was resolved for provider ${params.provider}.`
-        : params.decision === "allow"
-          ? `Resolved route ${params.route}.`
-          : "Routing was skipped because execution did not reach dispatch.",
+      ? "Deferred — permit evaluation does not trigger routing."
+      : anyDenied
+        ? "Skipped — request denied before dispatch."
+        : isRoutingDenied
+          ? `No eligible route for provider ${params.provider}.`
+          : `Resolved route: ${params.route}.`,
   );
+
+  // 6. dispatch
   push(
-    "execution",
+    "dispatch",
     params.mode === "permit"
       ? "skipped"
       : params.decision === "allow"
         ? "completed"
         : "skipped",
     params.mode === "permit"
-      ? "Permit creation ends before any provider execution path is opened."
+      ? "Deferred — permit does not trigger execution."
       : params.decision === "allow"
-        ? "Provider execution was simulated inside the deterministic sandbox."
-        : "Execution was never dispatched upstream.",
+        ? "Provider call executed (simulated in sandbox)."
+        : "Skipped — request denied before execution.",
   );
+
+  // 7. reconcile
   push(
-    "terminal-accounting",
-    params.mode === "execution" && params.decision === "allow" ? "completed" : "skipped",
+    "reconcile",
     params.mode === "execution" && params.decision === "allow"
-      ? `Actual cost $${formatUsd(params.actualCostUsd)} posted. Budget moved to $${formatUsd(params.budgetAfterUsd)}.`
-      : "Terminal accounting only posts when a governed execution completes.",
+      ? "completed"
+      : "skipped",
+    params.mode === "execution" && params.decision === "allow"
+      ? `Actual cost $${formatUsd(params.actualCostUsd)} reconciled. Budget now $${formatUsd(params.budgetAfterUsd)}.`
+      : "Skipped — no execution to reconcile.",
   );
+
+  // 8. emit
   push(
-    "audit",
+    "emit",
     "completed",
     params.mode === "permit"
-      ? `Permit decision ${params.decision} recorded for ${params.matchedPolicy}.`
-      : `Governed request ${params.decision} recorded with lifecycle and accounting data.`,
+      ? `Event: permit.${params.decision === "allow" ? "evaluated" : "denied"}`
+      : `Event: execution.${params.decision === "allow" ? "completed" : "denied"}`,
   );
 
   return timeline;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Record builders                                                    */
+/* ------------------------------------------------------------------ */
 
 function buildActualCost(provider: string, estimatedCostUsd: number): number {
   return Number(
@@ -327,6 +474,8 @@ function createPermitRecord(
     actualCostUsd: 0,
     budgetBeforeUsd: session.budgetUsdRemaining,
     budgetAfterUsd: session.budgetUsdRemaining,
+    firewallRuleId: evaluation.firewallRuleId,
+    firewallDetail: evaluation.firewallDetail,
   });
 
   const permit: PermitRecord = {
@@ -341,6 +490,8 @@ function createPermitRecord(
     estimatedCostUsd: evaluation.estimatedCostUsd,
     budgetBeforeUsd: session.budgetUsdRemaining,
     budgetAfterUsd: session.budgetUsdRemaining,
+    firewallRuleId: evaluation.firewallRuleId,
+    firewallDetail: evaluation.firewallDetail,
     timestamp: lifecycle.at(-1)?.timestamp ?? nextTimestamp(session.eventCounter),
     lifecycle,
   };
@@ -382,6 +533,8 @@ function createRequestRecord(
     actualCostUsd,
     budgetBeforeUsd,
     budgetAfterUsd,
+    firewallRuleId: evaluation.firewallRuleId,
+    firewallDetail: evaluation.firewallDetail,
   });
 
   const request: RequestRecord = {
@@ -402,6 +555,8 @@ function createRequestRecord(
     actualCostUsd,
     budgetBeforeUsd,
     budgetAfterUsd,
+    firewallRuleId: evaluation.firewallRuleId,
+    firewallDetail: evaluation.firewallDetail,
     traceId: createTraceId(session.traceCounter),
     timestamp: lifecycle.at(-1)?.timestamp ?? nextTimestamp(session.eventCounter),
     lifecycle,
@@ -426,6 +581,37 @@ function createRequestRecord(
 
   return request;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Without-Keel contrast messages                                     */
+/* ------------------------------------------------------------------ */
+
+function withoutKeelMessage(
+  evaluation: Evaluation,
+  provider: string,
+  model: string,
+): string {
+  switch (evaluation.reasonCode) {
+    case "model_not_allowed":
+      return `Without Keel this request runs on ${model} unchecked — estimated cost $${formatUsd(evaluation.estimatedCostUsd)} with no policy gate.`;
+    case "budget_exceeded":
+      return `Without Keel this request executes and overshoots your intended budget.`;
+    case "firewall_blocked":
+      return `Without Keel this prompt — including the detected ${evaluation.firewallRuleId ?? "pattern"} — is sent directly to ${provider}. The data leaves your infrastructure.`;
+    case "request_limit_reached":
+      return "Without Keel there is no request cap — runaway loops continue unchecked.";
+    case "provider_not_available":
+      return `Without Keel this request fails with a provider error and no fallback.`;
+    case "policy_passed":
+      return "Without Keel there is no cost tracking, no audit trail, and no budget enforcement.";
+    default:
+      return "";
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Inspector builders                                                 */
+/* ------------------------------------------------------------------ */
 
 function createDecisionInspector(
   title: string,
@@ -474,10 +660,57 @@ function createDecisionInspector(
   };
 }
 
-function createExplainInspector(request: RequestRecord, command: string): GovernanceInspectorState {
+function createExplainInspector(
+  request: RequestRecord,
+  command: string,
+  session: SessionState,
+): GovernanceInspectorState {
+  // Build counterfactual rows
+  const counterfactuals: TerminalRow[] = [];
+
+  if (request.decision === "allow") {
+    counterfactuals.push({
+      label: "would_deny_if",
+      value: `budget were below $${formatUsd(request.estimatedCostUsd)}`,
+    });
+    counterfactuals.push({
+      label: "would_deny_if",
+      value: `model were ${session.blockedPremiumModels[0] ?? "gpt-4.1"} (blocked by policy)`,
+    });
+    counterfactuals.push({
+      label: "would_deny_if",
+      value: "input contained an API key, SSN, or injection pattern",
+    });
+  } else {
+    if (request.reasonCode === "model_not_allowed") {
+      counterfactuals.push({
+        label: "would_allow_if",
+        value: `model changed to ${session.allowedModels[0] ?? "gpt-4.1-mini"}`,
+      });
+    }
+    if (request.reasonCode === "budget_exceeded") {
+      const overdraft = Number(
+        Math.max(0, request.estimatedCostUsd - request.budgetBeforeUsd).toFixed(4),
+      );
+      counterfactuals.push({
+        label: "would_allow_if",
+        value: `budget increased by $${formatUsd(overdraft)}`,
+      });
+    }
+    if (request.reasonCode === "firewall_blocked") {
+      counterfactuals.push({
+        label: "would_allow_if",
+        value: "sensitive content removed from prompt input",
+      });
+    }
+  }
+
   return {
     title: "Decision explanation",
-    subtitle: "Structured explanation of why the request was allowed or denied.",
+    subtitle:
+      request.decision === "allow"
+        ? `Allowed — policy ${request.matchedPolicy} matched, budget had $${formatUsd(request.budgetBeforeUsd)} remaining.`
+        : `Denied — ${request.reasonCode}.`,
     decision: request.decision,
     why: request.why,
     matchedPolicy: request.matchedPolicy,
@@ -498,6 +731,7 @@ function createExplainInspector(request: RequestRecord, command: string): Govern
     summaryRows: [
       { label: "routing", value: request.routing ?? "not dispatched" },
       { label: "status", value: request.status },
+      ...counterfactuals,
     ],
     quickActions: [
       { label: "Replay timeline", command: `keel timeline ${request.id}` },
@@ -510,9 +744,14 @@ function createTimelineInspector(
   request: RequestRecord,
   command: string,
 ): GovernanceInspectorState {
+  const blockedStage = request.lifecycle.find((s) => s.status === "blocked");
+  const completedCount = request.lifecycle.filter((s) => s.status === "completed").length;
+
   return {
     title: "Governance timeline",
-    subtitle: "Lifecycle replay across Keel's governed execution spine.",
+    subtitle: blockedStage
+      ? `Blocked at ${blockedStage.stage} — ${request.lifecycle.length - completedCount} stages skipped.`
+      : `${completedCount} of ${request.lifecycle.length} stages completed.`,
     decision: request.decision,
     why: request.why,
     matchedPolicy: request.matchedPolicy,
@@ -531,7 +770,10 @@ function createTimelineInspector(
     lifecycle: request.lifecycle,
     traceId: request.traceId,
     summaryRows: [
-      { label: "stages", value: request.lifecycle.map((stage) => stage.stage).join(" -> ") },
+      {
+        label: "stages",
+        value: request.lifecycle.map((stage) => `${stage.stage}:${stage.status}`),
+      },
       { label: "status", value: request.status },
     ],
     quickActions: [
@@ -544,7 +786,7 @@ function createTimelineInspector(
 function createUsageInspector(command: string, session: SessionState): GovernanceInspectorState {
   return {
     title: "Usage and accounting",
-    subtitle: "Deterministic ledger totals for this local sandbox session.",
+    subtitle: "Ledger totals for this sandbox session.",
     matchedPolicy: session.policy,
     budgetBeforeUsd: session.budgetUsdTotal,
     budgetAfterUsd: session.budgetUsdRemaining,
@@ -568,6 +810,10 @@ function createUsageInspector(command: string, session: SessionState): Governanc
   };
 }
 
+/* ------------------------------------------------------------------ */
+/*  Command handlers                                                   */
+/* ------------------------------------------------------------------ */
+
 function createHelpArtifact(): CommandArtifact {
   return {
     commandName: "help",
@@ -580,7 +826,7 @@ function createHelpArtifact(): CommandArtifact {
       },
       {
         label: "mode",
-        value: "deterministic sandbox only; no live provider calls or arbitrary shell access",
+        value: "deterministic sandbox — no live provider calls or arbitrary shell access",
       },
     ],
   };
@@ -595,24 +841,64 @@ function handlePermitCreate(session: SessionState, command: ShellCommand): Comma
 
   session.commandCount += 1;
 
+  const isAllow = permit.decision === "allow";
+  const headline = isAllow
+    ? `permit issued — $${formatUsd(permit.estimatedCostUsd)} reserved, execution not yet dispatched`
+    : permit.reasonCode === "firewall_blocked"
+      ? `permit denied — ${permit.firewallRuleId ?? "firewall_blocked"}`
+      : `permit denied — ${permit.reasonCode}`;
+
+  const rows: TerminalRow[] = [
+    { label: "decision", value: permit.decision },
+    { label: "permit_id", value: permit.id },
+    { label: "policy_id", value: permit.matchedPolicy },
+    { label: "provider", value: permit.provider },
+    { label: "model", value: permit.model },
+    { label: "cost_usd_micros", value: String(toMicros(permit.estimatedCostUsd)) },
+  ];
+
+  if (isAllow) {
+    rows.push({
+      label: "x-keel-decision",
+      value: "allow",
+    });
+    rows.push({
+      label: "x-keel-firewall-result",
+      value: "pass",
+    });
+  }
+
+  if (permit.firewallRuleId) {
+    rows.push({
+      label: "x-keel-firewall-result",
+      value: permit.firewallRuleId,
+    });
+  }
+
+  rows.push({ label: "why", value: permit.why });
+  rows.push({
+    label: "without_keel",
+    value: withoutKeelMessage(evaluation, provider, model),
+  });
+  rows.push({
+    label: "learn_more",
+    value: permit.reasonCode === "firewall_blocked"
+      ? "https://docs.keelapi.com/security"
+      : "https://docs.keelapi.com/permits",
+  });
+
   return {
     session,
     artifact: {
       commandName: "permits-create",
       tone: permit.decision === "allow" ? "success" : "denied",
-      headline: permit.decision === "allow" ? "permit issued" : "permit denied",
-      rows: [
-        { label: "decision", value: permit.decision },
-        { label: "permit_id", value: permit.id },
-        { label: "matched_policy", value: permit.matchedPolicy },
-        { label: "provider", value: permit.provider },
-        { label: "model", value: permit.model },
-        { label: "estimated_cost_usd", value: formatUsd(permit.estimatedCostUsd) },
-        { label: "why", value: permit.why },
-      ],
+      headline,
+      rows,
       inspector: createDecisionInspector(
         "Permit decision",
-        "Permit-first governance, before any execution path is opened.",
+        isAllow
+          ? "Budget reserved but not spent — execution requires a separate dispatch."
+          : `Denied at ${permit.reasonCode === "firewall_blocked" ? "firewall" : "permit"} stage.`,
         null,
         permit,
         command.raw,
@@ -631,29 +917,103 @@ function handleExecute(session: SessionState, command: ShellCommand): CommandRun
 
   session.commandCount += 1;
 
+  const isAllow = request.decision === "allow";
+
+  // Build headline with story
+  let headline: string;
+  if (isAllow) {
+    headline = `allowed — 8 governance stages passed, $${formatUsd(request.actualCostUsd)} billed`;
+  } else if (request.reasonCode === "firewall_blocked") {
+    headline = `blocked — ${request.firewallRuleId ?? "firewall_blocked"} in prompt content`;
+  } else if (request.reasonCode === "model_not_allowed") {
+    headline = `denied — ${model} blocked by policy, $0.00 spent`;
+  } else if (request.reasonCode === "budget_exceeded") {
+    headline = `denied — cost $${formatUsd(request.estimatedCostUsd)} exceeds remaining budget $${formatUsd(request.budgetBeforeUsd)}`;
+  } else {
+    headline = `denied — ${request.reasonCode}`;
+  }
+
+  const rows: TerminalRow[] = [
+    { label: "decision", value: request.decision },
+    { label: "request_id", value: request.id },
+    { label: "permit_id", value: request.permitId },
+    { label: "policy_id", value: request.matchedPolicy },
+  ];
+
+  if (isAllow) {
+    rows.push(
+      { label: "route", value: request.routing ?? "not dispatched" },
+      { label: "input_tokens", value: String(request.inputTokens) },
+      { label: "output_tokens", value: String(request.outputTokens) },
+      { label: "cost_usd_micros", value: `${toMicros(request.estimatedCostUsd)} estimated → ${toMicros(request.actualCostUsd)} actual` },
+      { label: "budget_remaining", value: `$${formatUsd(request.budgetAfterUsd)}` },
+    );
+  } else {
+    if (request.reasonCode === "model_not_allowed") {
+      rows.push({
+        label: "cost_avoided",
+        value: `$${formatUsd(request.estimatedCostUsd)} — what this request would have cost on ${model}`,
+      });
+    }
+    if (request.reasonCode === "budget_exceeded") {
+      const overdraft = Number(
+        Math.max(0, request.estimatedCostUsd - request.budgetBeforeUsd).toFixed(4),
+      );
+      rows.push({
+        label: "cost_avoided",
+        value: `$${formatUsd(request.estimatedCostUsd)} — would have exceeded budget by $${formatUsd(overdraft)}`,
+      });
+    }
+    if (request.firewallRuleId) {
+      rows.push({
+        label: "firewall_rule",
+        value: request.firewallRuleId,
+      });
+    }
+  }
+
+  // x-keel headers
+  rows.push(
+    { label: "x-keel-request-id", value: request.id },
+    { label: "x-keel-decision", value: request.decision },
+    {
+      label: "x-keel-firewall-result",
+      value: request.firewallRuleId ?? "pass",
+    },
+    {
+      label: "x-keel-cost-usd",
+      value: isAllow ? formatUsd(request.actualCostUsd) : "0.0000",
+    },
+  );
+
+  rows.push({ label: "why", value: request.why });
+  rows.push({
+    label: "without_keel",
+    value: withoutKeelMessage(evaluation, provider, model),
+  });
+
+  const executeLearnMore =
+    request.reasonCode === "firewall_blocked"
+      ? "https://docs.keelapi.com/security"
+      : request.reasonCode === "model_not_allowed"
+        ? "https://docs.keelapi.com/recipes/guard-model-usage"
+        : request.reasonCode === "budget_exceeded"
+          ? "https://docs.keelapi.com/recipes/cost-controls"
+          : "https://docs.keelapi.com/executions";
+  rows.push({ label: "learn_more", value: executeLearnMore });
+
   return {
     session,
     artifact: {
       commandName: "execute",
-      tone: request.decision === "allow" ? "success" : "denied",
-      headline:
-        request.decision === "allow"
-          ? "governed execution completed"
-          : "governed execution denied",
-      rows: [
-        { label: "decision", value: request.decision },
-        { label: "request_id", value: request.id },
-        { label: "permit_id", value: request.permitId },
-        { label: "matched_policy", value: request.matchedPolicy },
-        { label: "route", value: request.routing ?? "not dispatched" },
-        { label: "estimated_cost_usd", value: formatUsd(request.estimatedCostUsd) },
-        { label: "actual_cost_usd", value: formatUsd(request.actualCostUsd) },
-        { label: "budget_after_usd", value: formatUsd(request.budgetAfterUsd) },
-        { label: "why", value: request.why },
-      ],
+      tone: isAllow ? "success" : "denied",
+      headline,
+      rows,
       inspector: createDecisionInspector(
         "Governed execution",
-        "Permit, route, simulate execution, then inspect ledger and audit state.",
+        isAllow
+          ? "Permit, route, dispatch, reconcile — full governance spine."
+          : `Stopped at ${request.reasonCode === "firewall_blocked" ? "firewall" : "permit"} stage.`,
         request,
         permit,
         command.raw,
@@ -680,21 +1040,71 @@ function handleExplain(session: SessionState, command: ShellCommand): CommandRun
   const request = requireRequest(session, command.positionals[0]);
   session.commandCount += 1;
 
+  const headline =
+    request.decision === "allow"
+      ? `allowed — policy ${request.matchedPolicy} matched, budget had $${formatUsd(request.budgetBeforeUsd)} remaining`
+      : request.reasonCode === "firewall_blocked"
+        ? `denied — ${request.firewallRuleId ?? "firewall rule triggered"}`
+        : `denied — ${request.reasonCode}`;
+
+  const rows: TerminalRow[] = [
+    { label: "request_id", value: request.id },
+    { label: "decision", value: request.decision },
+    { label: "policy_id", value: request.matchedPolicy },
+    { label: "routing", value: request.routing ?? "not dispatched" },
+    { label: "trace_id", value: request.traceId },
+  ];
+
+  if (request.firewallRuleId) {
+    rows.push({ label: "firewall_rule", value: request.firewallRuleId });
+  }
+
+  rows.push({ label: "why", value: request.why });
+
+  // Counterfactuals in main output
+  if (request.decision === "allow") {
+    rows.push({
+      label: "would_deny_if",
+      value: [
+        `budget were below $${formatUsd(request.estimatedCostUsd)}`,
+        `model were ${session.blockedPremiumModels[0] ?? "gpt-4.1"}`,
+        "input contained an API key, SSN, or injection pattern",
+      ],
+    });
+  } else {
+    if (request.reasonCode === "model_not_allowed") {
+      rows.push({
+        label: "would_allow_if",
+        value: `model changed to ${session.allowedModels[0] ?? "gpt-4.1-mini"}`,
+      });
+    }
+    if (request.reasonCode === "budget_exceeded") {
+      rows.push({
+        label: "would_allow_if",
+        value: "budget increased or input shortened to reduce token count",
+      });
+    }
+    if (request.reasonCode === "firewall_blocked") {
+      rows.push({
+        label: "would_allow_if",
+        value: "sensitive content removed from prompt input",
+      });
+    }
+  }
+
+  rows.push({
+    label: "learn_more",
+    value: "https://docs.keelapi.com/execution-spine",
+  });
+
   return {
     session,
     artifact: {
       commandName: "explain",
       tone: request.decision === "allow" ? "info" : "denied",
-      headline: "decision explanation",
-      rows: [
-        { label: "request_id", value: request.id },
-        { label: "decision", value: request.decision },
-        { label: "matched_policy", value: request.matchedPolicy },
-        { label: "routing", value: request.routing ?? "not dispatched" },
-        { label: "trace_id", value: request.traceId },
-        { label: "why", value: request.why },
-      ],
-      inspector: createExplainInspector(request, command.raw),
+      headline,
+      rows,
+      inspector: createExplainInspector(request, command.raw, session),
     },
   };
 }
@@ -703,19 +1113,38 @@ function handleTimeline(session: SessionState, command: ShellCommand): CommandRu
   const request = requireRequest(session, command.positionals[0]);
   session.commandCount += 1;
 
+  const blockedStage = request.lifecycle.find((s) => s.status === "blocked");
+  const completedCount = request.lifecycle.filter((s) => s.status === "completed").length;
+  const totalStages = request.lifecycle.length;
+
+  const headline = blockedStage
+    ? `blocked at stage ${request.lifecycle.indexOf(blockedStage) + 1} of ${totalStages} — ${blockedStage.stage} denied ${request.model}`
+    : `${completedCount} of ${totalStages} stages completed — no blocks`;
+
+  // Only show interesting stages in main output (skip always-completed bookends)
+  const interestingStages = request.lifecycle.filter(
+    (s) => s.status === "blocked" || ["permit", "firewall", "routing", "dispatch", "reconcile"].includes(s.stage),
+  );
+
   return {
     session,
     artifact: {
       commandName: "timeline",
       tone: "info",
-      headline: "timeline replay",
+      headline,
       rows: [
         { label: "request_id", value: request.id },
         { label: "decision", value: request.decision },
         { label: "trace_id", value: request.traceId },
         {
           label: "stages",
-          value: request.lifecycle.map((stage) => `${stage.stage}:${stage.status}`),
+          value: interestingStages.map(
+            (stage) => `${stage.stage}: ${stage.status} — ${stage.detail}`,
+          ),
+        },
+        {
+          label: "learn_more",
+          value: "https://docs.keelapi.com/execution-spine",
         },
       ],
       inspector: createTimelineInspector(request, command.raw),
@@ -726,23 +1155,65 @@ function handleTimeline(session: SessionState, command: ShellCommand): CommandRu
 function handleUsage(session: SessionState, command: ShellCommand): CommandRunResult {
   session.commandCount += 1;
 
+  const denied = session.usage.deniedRequests;
+  const total = session.usage.totalRequests;
+
+  // Estimate cost avoided from denied requests (sum of estimated costs for denied)
+  const deniedCostAvoided = session.requests
+    .filter((r) => r.status === "denied")
+    .reduce((sum, r) => sum + r.estimatedCostUsd, 0);
+
+  const headline =
+    total === 0
+      ? "no requests yet"
+      : denied > 0
+        ? `${total} requests, ${denied} denied — $${formatUsd(deniedCostAvoided)} saved by governance`
+        : `${total} requests, all allowed — $${formatUsd(session.usage.totalActualCostUsd)} total spend`;
+
+  const rows: TerminalRow[] = [
+    { label: "total_requests", value: String(total) },
+    { label: "completed", value: String(session.usage.completedRequests) },
+    { label: "denied", value: String(denied) },
+    {
+      label: "tokens",
+      value: `${session.usage.totalInputTokens} in / ${session.usage.totalOutputTokens} out`,
+    },
+    {
+      label: "cost_usd_micros",
+      value: String(toMicros(session.usage.totalActualCostUsd)),
+    },
+    {
+      label: "budget_remaining",
+      value: `$${formatUsd(session.budgetUsdRemaining)} of $${formatUsd(session.budgetUsdTotal)} (${Math.round((1 - session.budgetUsdRemaining / session.budgetUsdTotal) * 100)}% used)`,
+    },
+  ];
+
+  if (deniedCostAvoided > 0) {
+    rows.push({
+      label: "cost_avoided",
+      value: `$${formatUsd(deniedCostAvoided)} across ${denied} denied request${denied === 1 ? "" : "s"}`,
+    });
+  }
+
+  rows.push({
+    label: "without_keel",
+    value:
+      denied > 0
+        ? `Without Keel, those ${denied} denied requests would have executed — adding $${formatUsd(deniedCostAvoided)} with no audit trail.`
+        : "Without Keel, you would have no record of spend or usage attribution.",
+  });
+  rows.push({
+    label: "learn_more",
+    value: "https://docs.keelapi.com/recipes/cost-controls",
+  });
+
   return {
     session,
     artifact: {
       commandName: "usage",
       tone: "info",
-      headline: "usage summary",
-      rows: [
-        { label: "total_requests", value: String(session.usage.totalRequests) },
-        { label: "completed_requests", value: String(session.usage.completedRequests) },
-        { label: "denied_requests", value: String(session.usage.deniedRequests) },
-        {
-          label: "tokens",
-          value: `${session.usage.totalInputTokens} in / ${session.usage.totalOutputTokens} out`,
-        },
-        { label: "total_actual_cost_usd", value: formatUsd(session.usage.totalActualCostUsd) },
-        { label: "budget_remaining_usd", value: formatUsd(session.budgetUsdRemaining) },
-      ],
+      headline,
+      rows,
       inspector: createUsageInspector(command.raw, session),
     },
   };
@@ -761,14 +1232,19 @@ function handleSandboxReset(): CommandRunResult {
       rows: [
         { label: "project", value: session.project },
         { label: "policy", value: session.policy },
-        { label: "budget_remaining_usd", value: formatUsd(session.budgetUsdRemaining) },
+        { label: "budget_remaining", value: `$${formatUsd(session.budgetUsdRemaining)}` },
         { label: "requests_remaining", value: String(session.requestsRemaining) },
+        { label: "firewall", value: "active — 6 detection rules loaded" },
         { label: "mode", value: "deterministic sandbox restored" },
       ],
       inspector: createUsageInspector("keel sandbox reset", session),
     },
   };
 }
+
+/* ------------------------------------------------------------------ */
+/*  Router                                                             */
+/* ------------------------------------------------------------------ */
 
 function handleParsedCommand(
   session: SessionState,

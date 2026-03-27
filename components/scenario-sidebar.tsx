@@ -11,6 +11,7 @@ type ScenarioSidebarProps = {
 const categoryLabels: Record<WorkbenchScenario["category"], string> = {
   permits: "Permit-first",
   execution: "Execution",
+  security: "Security",
   explainability: "Inspect",
   accounting: "Accounting",
   sandbox: "Sandbox",
