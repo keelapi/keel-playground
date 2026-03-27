@@ -91,13 +91,9 @@ export function WorkbenchShell() {
           (initialScenario ? resolveScenarioCommand(initialScenario, storedSession) : "");
 
     setSession(storedSession);
-    setEntries(storedUiState?.entries ?? []);
+    setEntries([]);
     setHistory(storedUiState?.history ?? []);
-    setSelectedEntryId(
-      storedUiState?.selectedEntryId ??
-        storedUiState?.entries.at(-1)?.id ??
-        null,
-    );
+    setSelectedEntryId(null);
     setActiveScenarioId(initialScenario?.id ?? null);
     setCommandInput(draftCommand);
     hasLoadedRef.current = true;
@@ -234,8 +230,8 @@ export function WorkbenchShell() {
     const isReset = result.artifact.commandName === "sandbox-reset";
 
     setSession(result.session);
-    setEntries((currentEntries) => (isReset ? [nextEntry] : [...currentEntries, nextEntry]));
-    setSelectedEntryId(nextEntry.id);
+    setEntries((currentEntries) => (isReset ? [] : [...currentEntries, nextEntry]));
+    setSelectedEntryId(isReset ? null : nextEntry.id);
     setHistory((currentHistory) => (isReset ? [rawCommand] : [...currentHistory, rawCommand]));
     setHistoryIndex(null);
     setCommandInput("");
@@ -340,8 +336,8 @@ export function WorkbenchShell() {
 
       <main className="mx-auto max-w-[960px] px-6 pt-10 pb-16">
         <div className="mb-6">
-          <h2 className="text-[15px] font-medium text-foreground">Try it out</h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">
+          <h2 className="text-[22px] font-semibold tracking-tight text-foreground">Try it out</h2>
+          <p className="mt-1.5 text-[15px] text-muted-foreground">
             Explore Keel&apos;s permit-driven governance in a deterministic sandbox.
           </p>
         </div>
@@ -398,25 +394,6 @@ export function WorkbenchShell() {
               />
             </div>
 
-            <div
-              className="flex items-center justify-between px-4 py-2.5"
-              style={{ borderTop: "1px solid hsl(var(--snippet-border))" }}
-            >
-              <a
-                href="https://docs.keelapi.com"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary transition hover:opacity-75"
-              >
-                <span aria-hidden="true">▸</span> Open docs
-              </a>
-              <div
-                className="hidden font-mono text-[10px] md:block"
-                style={{ color: "hsl(var(--snippet-muted))" }}
-              >
-                Tab autocomplete · ↑↓ history · ⌘K focus
-              </div>
-            </div>
           </div>
         </div>
 

@@ -20,7 +20,7 @@ export function CommandInput({
   inputRef,
 }: CommandInputProps) {
   return (
-    <div className="border-t border-border px-4 py-2.5">
+    <div className="px-4 py-2.5">
       <div className="flex items-center gap-2">
         <span className="font-mono text-[13px] text-muted-foreground">›</span>
         <input
