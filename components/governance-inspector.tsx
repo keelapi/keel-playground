@@ -28,13 +28,8 @@ export function GovernanceInspector({
   if (!inspector) {
     return (
       <aside className="flex h-full min-h-0 flex-col">
-        <div className="border-b border-border/80 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            governance inspector
-          </div>
-        </div>
-        <div className="px-3 py-3 font-mono text-[11px] leading-5 text-muted-foreground">
-          Select a session row to inspect permit evidence, policy resolution, routing, spend, and lifecycle state.
+        <div className="px-3 py-4 font-mono text-[11px] leading-5 text-muted-foreground">
+          Run a command to inspect governance decisions.
         </div>
       </aside>
     );
@@ -45,10 +40,7 @@ export function GovernanceInspector({
       <div className="border-b border-border/80 px-3 py-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              governance inspector
-            </div>
-            <div className="mt-1 text-[12px] text-foreground">{inspector.title}</div>
+            <div className="text-[12px] text-foreground">{inspector.title}</div>
             <div className="mt-1 text-[11px] leading-4 text-muted-foreground">
               {inspector.subtitle}
             </div>
