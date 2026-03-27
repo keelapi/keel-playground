@@ -45,12 +45,46 @@ function toneClasses(tone: WorkbenchEntry["artifact"]["tone"]) {
   }
 }
 
+function isUrl(text: string): boolean {
+  return /^https?:\/\/\S+$/.test(text.trim());
+}
+
 function renderValue(value: WorkbenchEntry["artifact"]["rows"][number]["value"]) {
   if (Array.isArray(value)) {
-    return value.join("\n");
+    return value.map((v, i) => {
+      const s = String(v);
+      if (isUrl(s)) {
+        return (
+          <a
+            key={i}
+            href={s.trim()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:decoration-primary"
+          >
+            {s.trim()}
+          </a>
+        );
+      }
+      return <span key={i}>{s}{i < value.length - 1 ? "\n" : ""}</span>;
+    });
   }
 
-  return String(value);
+  const s = String(value);
+  if (isUrl(s)) {
+    return (
+      <a
+        href={s.trim()}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:decoration-primary"
+      >
+        {s.trim()}
+      </a>
+    );
+  }
+
+  return s;
 }
 
 export function OutputPane({
