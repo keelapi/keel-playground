@@ -173,8 +173,6 @@ export function GovernanceInspector({
           <Section title="Learn more">
             <a
               href={inspector.learnMoreUrl}
-              target="_blank"
-              rel="noopener noreferrer"
               className="font-mono text-[11px] text-primary underline decoration-primary/40 underline-offset-2 transition hover:decoration-primary"
             >
               {inspector.learnMoreUrl}

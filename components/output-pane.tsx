@@ -58,8 +58,6 @@ function renderValue(value: WorkbenchEntry["artifact"]["rows"][number]["value"])
           <a
             key={i}
             href={s.trim()}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:decoration-primary"
           >
             {s.trim()}

@@ -319,8 +319,6 @@ export function WorkbenchShell() {
           <div className="site-header__actions">
             <a
               href="https://docs.keelapi.com/quickstart"
-              target="_blank"
-              rel="noreferrer"
               className="header-link"
             >
               Quickstart
@@ -398,63 +396,45 @@ export function WorkbenchShell() {
               </div>
             </div>
 
-            {selectedEntry?.artifact.inspector ? (
+            <div
+              className="overflow-hidden rounded-2xl"
+              style={{
+                border: "1px solid hsl(var(--snippet-border))",
+                background: "hsl(var(--snippet-chrome))",
+                boxShadow: "var(--snippet-shadow)",
+              }}
+            >
               <div
-                className="overflow-hidden rounded-2xl"
-                style={{
-                  border: "1px solid hsl(var(--snippet-border))",
-                  background: "hsl(var(--snippet-chrome))",
-                  boxShadow: "var(--snippet-shadow)",
-                }}
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
               >
-                <div
-                  className="flex items-center justify-between px-4 py-3"
-                  style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
-                  </div>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
-                    governance inspector
-                  </span>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
                 </div>
-                <div className="max-h-[420px] overflow-y-auto" style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}>
-                  <GovernanceInspector
-                    inspector={selectedEntry.artifact.inspector}
-                    onQuickAction={(command, label) => {
-                      if (label === "Copy command") {
-                        void handleCopyCommand(command);
-                      } else {
-                        handlePrefillCommand(command);
-                      }
-                    }}
-                    copiedCommand={copiedCommand}
-                  />
-                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                  governance inspector
+                </span>
               </div>
-            ) : null}
+              <div
+                className={selectedEntry?.artifact.inspector ? "max-h-[420px] overflow-y-auto" : ""}
+                style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
+              >
+                <GovernanceInspector
+                  inspector={selectedEntry?.artifact.inspector ?? null}
+                  onQuickAction={(command, label) => {
+                    if (label === "Copy command") {
+                      void handleCopyCommand(command);
+                    } else {
+                      handlePrefillCommand(command);
+                    }
+                  }}
+                  copiedCommand={copiedCommand}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-6 flex items-center justify-between">
-          <a
-            href="https://docs.keelapi.com/quickstart"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            Quickstart guide →
-          </a>
-          <a
-            href="https://docs.keelapi.com/api-reference"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[13px] text-muted-foreground transition hover:text-foreground"
-          >
-            API reference →
-          </a>
         </div>
       </main>
     </div>
