@@ -67,7 +67,7 @@ export function OutputPane({
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
       {entries.length === 0 ? (
-        <div className="px-4 py-5 font-mono">
+        <div className="px-4 pb-5 pt-14 font-mono">
           <pre
             className="mx-auto w-fit text-[9px] leading-[1.3] text-muted-foreground/25 select-none"
             aria-hidden="true"

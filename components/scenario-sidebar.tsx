@@ -45,9 +45,13 @@ export function ScenarioSidebar({
                 type="button"
                 onClick={() => onSelectScenario(scenario.id)}
                 className={`block w-full px-4 py-[7px] text-left text-[13px] leading-tight transition ${
-                  isActive
-                    ? "text-primary"
-                    : "text-primary/80 hover:text-primary"
+                  scenario.category === "sandbox"
+                    ? isActive
+                      ? "text-destructive"
+                      : "text-destructive/70 hover:text-destructive"
+                    : isActive
+                      ? "text-primary"
+                      : "text-primary/80 hover:text-primary"
                 }`}
               >
                 {scenario.title}

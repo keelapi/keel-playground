@@ -311,13 +311,8 @@ export function WorkbenchShell() {
           <span className="keel-header-brand">
             <a href="https://keelapi.com" className="keel-header-brand__link">
               <img className="keel-header-brand__icon" src="/keel.svg" alt="" aria-hidden="true" />
-              <span className="keel-header-brand__copy">
-                <span className="keel-header-brand__wordmark">Keel</span>
-                <span className="keel-header-brand__separator" aria-hidden="true">
-                  /
-                </span>
-              </span>
-              <span className="keel-header-brand__title">Workbench</span>
+              <span className="keel-header-brand__wordmark">Keel</span>
+              <span className="keel-header-brand__title">Play</span>
             </a>
           </span>
           <div className="site-header__actions">

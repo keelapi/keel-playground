@@ -198,7 +198,7 @@
 
   .keel-header-brand__wordmark {
     color: inherit;
-    font-size: 0.92rem;
+    font-size: 1.08rem;
     font-weight: 620;
     letter-spacing: -0.03em;
     white-space: nowrap;
@@ -213,9 +213,9 @@
   .keel-header-brand__title,
   .keel-header-brand__separator {
     color: hsl(var(--muted-foreground));
-    font-size: 0.74rem;
+    font-size: 1.08rem;
     font-weight: 500;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.01em;
   }
 
   .keel-header-brand__copy,
