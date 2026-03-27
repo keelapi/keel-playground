@@ -346,8 +346,8 @@ export function WorkbenchShell() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-sm md:block">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_minmax(0,1fr)]">
+          <div className="hidden md:block">
             <ScenarioSidebar
               scenarios={SCENARIO_LIBRARY}
               activeScenarioId={activeScenarioId}
@@ -355,14 +355,27 @@ export function WorkbenchShell() {
             />
           </div>
 
-          <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex items-center gap-1.5 border-b border-border/70 px-4 py-2.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
-              <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
-              <span className="h-2.5 w-2.5 rounded-full bg-foreground/10" />
+          <div
+            className="flex flex-col overflow-hidden rounded-2xl"
+            style={{
+              border: "1px solid hsl(var(--snippet-border))",
+              background: "hsl(var(--snippet-chrome))",
+              boxShadow: "var(--snippet-shadow)",
+            }}
+          >
+            <div
+              className="flex items-center gap-2 px-4 py-3"
+              style={{ borderBottom: "1px solid hsl(var(--snippet-border))" }}
+            >
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-red))" }} />
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-amber))" }} />
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: "hsl(var(--snippet-dot-green))" }} />
             </div>
 
-            <div className="flex h-[480px] min-h-0 flex-col">
+            <div
+              className="flex h-[480px] min-h-0 flex-col"
+              style={{ background: "hsl(var(--snippet-body))", color: "hsl(var(--snippet-text))" }}
+            >
               <OutputPane
                 entries={entries}
                 selectedEntryId={selectedEntry?.id ?? null}
@@ -385,16 +398,22 @@ export function WorkbenchShell() {
               />
             </div>
 
-            <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+            <div
+              className="flex items-center justify-between px-4 py-2.5"
+              style={{ borderTop: "1px solid hsl(var(--snippet-border))" }}
+            >
               <a
                 href="https://docs.keelapi.com"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary transition hover:text-foreground"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary transition hover:opacity-75"
               >
                 <span aria-hidden="true">▸</span> Open docs
               </a>
-              <div className="hidden font-mono text-[10px] text-muted-foreground md:block">
+              <div
+                className="hidden font-mono text-[10px] md:block"
+                style={{ color: "hsl(var(--snippet-muted))" }}
+              >
                 Tab autocomplete · ↑↓ history · ⌘K focus
               </div>
             </div>

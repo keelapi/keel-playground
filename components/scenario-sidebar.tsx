@@ -47,7 +47,7 @@ export function ScenarioSidebar({
                 className={`block w-full px-4 py-[7px] text-left text-[13px] leading-tight transition ${
                   isActive
                     ? "text-primary"
-                    : "text-foreground/80 hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {scenario.title}
