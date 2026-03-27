@@ -32,7 +32,7 @@ export function StageTimeline({ stages }: { stages: GovernanceStageState[] }) {
       {stages.map((stage, index) => (
         <div
           key={`${stage.stage}-${stage.timestamp}`}
-          className="grid grid-cols-[12px_76px_54px_minmax(0,1fr)] gap-1.5 border-b border-border/60 py-1"
+          className="grid grid-cols-[12px_76px_72px_minmax(0,1fr)] gap-x-3 gap-y-0 border-b border-border/60 py-1"
         >
           <div className="relative">
             <span
